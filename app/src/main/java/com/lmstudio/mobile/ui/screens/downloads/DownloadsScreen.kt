@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,17 +37,9 @@ fun DownloadsScreen(
     val context = LocalContext.current
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Permission is granted. You can now start the download.
-        } else {
-            // Explain to the user that the feature is unavailable because the
-            // feature requires a permission that the user has denied. At the
-            // same time, respect the user's decision. Don't link to system
-            // settings in an effort to convince the user to change their
-            // decision.
-        }
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        // Handle permissions
     }
 
     Scaffold(
@@ -64,6 +59,31 @@ fun DownloadsScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            // Network Warning
+            AnimatedVisibility(visible = !state.isNetworkAvailable) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.WifiOff, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(
+                            "No internet connection. Please check your network.",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = { viewModel.checkNetwork(); viewModel.loadPopularModels() }) {
+                            Text("Retry", color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                    }
+                }
+            }
+
             // Search bar
             OutlinedTextField(
                 value = searchQuery,
@@ -90,8 +110,46 @@ fun DownloadsScreen(
                         }
                     }
                 },
-                singleLine = true
+                singleLine = true,
+                enabled = state.isNetworkAvailable
             )
+
+            // Active Downloads
+            if (state.activeDownloads.isNotEmpty()) {
+                Text(
+                    "Downloading",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                state.activeDownloads.forEach { (id, progress) ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    id,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text("${progress.progress}%", style = MaterialTheme.typography.bodySmall)
+                            }
+                            LinearProgressIndicator(
+                                progress = { progress.progress / 100f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                            )
+                        }
+                    }
+                }
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
+            }
 
             // Content
             if (state.isLoading) {
@@ -101,7 +159,7 @@ fun DownloadsScreen(
                 ) {
                     CircularProgressIndicator()
                 }
-            } else if (state.error != null) {
+            } else if (state.error != null && state.isNetworkAvailable) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -125,7 +183,7 @@ fun DownloadsScreen(
                         }
                     }
                 }
-            } else if (state.models.isEmpty()) {
+            } else if (state.models.isEmpty() && state.isNetworkAvailable) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -156,20 +214,18 @@ fun DownloadsScreen(
                         ModelDownloadCard(
                             model = model,
                             onDownload = {
+                                val permissions = mutableListOf<String>()
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    when (ContextCompat.checkSelfPermission(
-                                        context,
-                                        Manifest.permission.POST_NOTIFICATIONS
-                                    )) {
-                                        PackageManager.PERMISSION_GRANTED -> {
-                                            viewModel.downloadModel(model)
-                                        }
-                                        else -> {
-                                            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        }
-                                    }
-                                } else {
+                                    permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+                                    permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                }
+
+                                if (permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
                                     viewModel.downloadModel(model)
+                                } else {
+                                    requestPermissionLauncher.launch(permissions.toTypedArray())
                                 }
                             }
                         )

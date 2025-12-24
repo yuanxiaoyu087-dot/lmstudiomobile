@@ -5,16 +5,29 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Environment
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.lmstudio.mobile.data.repository.ModelRepository
+import com.lmstudio.mobile.domain.model.LLMModel
+import com.lmstudio.mobile.domain.model.ModelFormat
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class DownloadService : Service() {
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    @Inject
+    lateinit var downloadManager: DownloadManager
+
+    @Inject
+    lateinit var modelRepository: ModelRepository
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     companion object {
         const val ACTION_START = "ACTION_START"
@@ -69,33 +82,64 @@ class DownloadService : Service() {
             .setOngoing(true)
 
         try {
-            // Placeholder: Replace with actual logic to get download URL
             val downloadUrl = "https://huggingface.co/$modelId/resolve/main/model.gguf"
-
             val url = URL(downloadUrl)
             val connection = url.openConnection()
             connection.connect()
             val fileSize = connection.contentLength
             val input = connection.getInputStream()
 
-            val outputFile = File(getExternalFilesDir(null), "$modelId.gguf")
+            // Path: /storage/emulated/0/LM studio Mobile/
+            val publicDir = File(Environment.getExternalStorageDirectory(), "LM studio Mobile")
+            if (!publicDir.exists()) {
+                publicDir.mkdirs()
+            }
+            
+            val fileName = modelId.substringAfterLast("/") + ".gguf"
+            val outputFile = File(publicDir, fileName)
             val output = FileOutputStream(outputFile)
 
-            val data = ByteArray(1024)
+            val data = ByteArray(8192)
             var total: Long = 0
             var count: Int
+            var lastUpdate = 0L
+
             while (input.read(data).also { count = it } != -1) {
                 total += count
-                val progress = (total * 100 / fileSize).toInt()
-                notificationBuilder
-                    .setProgress(100, progress, false)
-                    .setContentText("$progress%")
-                notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+                val progress = if (fileSize > 0) (total * 100 / fileSize).toInt() else 0
+                
+                if (System.currentTimeMillis() - lastUpdate > 500) {
+                    notificationBuilder
+                        .setProgress(100, progress, fileSize <= 0)
+                        .setContentText("$progress%")
+                    notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+                    downloadManager.updateProgress(modelId, progress)
+                    lastUpdate = System.currentTimeMillis()
+                }
+                
                 output.write(data, 0, count)
             }
             output.flush()
             output.close()
             input.close()
+
+            // Register in database
+            val newModel = LLMModel(
+                id = modelId,
+                name = fileName,
+                path = outputFile.absolutePath,
+                format = ModelFormat.GGUF,
+                size = total,
+                quantization = "Unknown",
+                parameters = "Unknown",
+                contextLength = 2048,
+                addedAt = System.currentTimeMillis(),
+                isLoaded = false,
+                huggingFaceId = modelId
+            )
+            modelRepository.insertModel(newModel)
+            
+            downloadManager.setCompleted(modelId)
 
             notificationBuilder
                 .setContentText("Download complete")
@@ -104,14 +148,23 @@ class DownloadService : Service() {
             notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
 
         } catch (e: Exception) {
+            downloadManager.setError(modelId, e.message ?: "Unknown error")
             notificationBuilder
                 .setContentText("Download failed: ${e.message}")
                 .setProgress(0, 0, false)
                 .setOngoing(false)
             notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
         } finally {
-            stopForeground(STOP_FOREGROUND_DETACH)
+            // Check if any other downloads are running before stopping foreground
+            if (downloadManager.activeDownloads.value.isEmpty()) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

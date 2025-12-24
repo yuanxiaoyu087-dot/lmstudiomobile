@@ -161,11 +161,14 @@ The project is **fully functional** with all major features implemented:
 
 **The app is ready for testing and further development!**
 
-## Next Steps for Full Production
+## Changelog
 
-1. **Test Native Build**: Verify llama.cpp compiles successfully
-2. **Test Model Loading**: Load a GGUF model and verify inference works
-3. **Complete Downloads**: Integrate download service with UI
-4. **Add Streaming**: Implement Server-Sent Events for API
-5. **Performance Testing**: Optimize GPU acceleration
-6. **Error Handling**: Add more robust error recovery
+### Version 1.0.1
+- **Network Awareness**: Added network status notification in Downloads screen when offline.
+- **Improved Downloads**: Implemented active download tracking in the UI. Downloads are now saved to a public folder `/storage/emulated/0/LM studio Mobile/` for easier access.
+- **Settings Enhancements**: Added help tooltips (question marks) for Threads, GPU Layers, and Context Size with detailed explanations.
+- **Theme Support**: Ensured Dark Theme is fully integrated into the settings.
+- **Local Model Import**: Added ability to import GGUF models from any location on the device storage using a system file picker.
+- **API Server SSE**: Implemented Server-Sent Events (SSE) for the local API server, enabling real-time streaming for external clients.
+- **UX Improvements**: Added "Load Last Used" button on the main chat screen for quick access to the previous model.
+- **Storage Permissions**: Added necessary handling for storage access on different Android versions.

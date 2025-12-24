@@ -6,13 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.lmstudio.mobile.data.remote.api.HuggingFaceApi
 import com.lmstudio.mobile.data.remote.dto.HFModelDto
 import com.lmstudio.mobile.domain.model.DeviceCapabilities
+import com.lmstudio.mobile.service.DownloadManager
+import com.lmstudio.mobile.service.DownloadProgress
 import com.lmstudio.mobile.service.DownloadService
 import com.lmstudio.mobile.util.DeviceUtils
+import com.lmstudio.mobile.util.NetworkUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,22 +24,42 @@ data class DownloadsState(
     val models: List<HFModelDto> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val deviceCapabilities: DeviceCapabilities? = null
+    val deviceCapabilities: DeviceCapabilities? = null,
+    val isNetworkAvailable: Boolean = true,
+    val activeDownloads: Map<String, DownloadProgress> = emptyMap()
 )
 
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val huggingFaceApi: HuggingFaceApi,
-    private val deviceUtils: DeviceUtils
+    private val deviceUtils: DeviceUtils,
+    private val networkUtils: NetworkUtils,
+    private val downloadManager: DownloadManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DownloadsState())
     val state: StateFlow<DownloadsState> = _state.asStateFlow()
 
     init {
+        checkNetwork()
         loadDeviceCapabilities()
-        loadPopularModels()
+        if (_state.value.isNetworkAvailable) {
+            loadPopularModels()
+        }
+        observeDownloads()
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadManager.activeDownloads.collectLatest { downloads ->
+                _state.value = _state.value.copy(activeDownloads = downloads)
+            }
+        }
+    }
+
+    fun checkNetwork() {
+        _state.value = _state.value.copy(isNetworkAvailable = networkUtils.isNetworkAvailable())
     }
 
     private fun loadDeviceCapabilities() {
@@ -45,8 +69,12 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun loadPopularModels() {
+        if (!networkUtils.isNetworkAvailable()) {
+            _state.value = _state.value.copy(isNetworkAvailable = false, isLoading = false)
+            return
+        }
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(isLoading = true, error = null, isNetworkAvailable = true)
             try {
                 val results = huggingFaceApi.searchModels(
                     query = "gguf",
@@ -68,8 +96,12 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun searchModels(query: String) {
+        if (!networkUtils.isNetworkAvailable()) {
+            _state.value = _state.value.copy(isNetworkAvailable = false)
+            return
+        }
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            _state.value = _state.value.copy(isLoading = true, isNetworkAvailable = true)
             try {
                 val results = huggingFaceApi.searchModels(query = query)
                 _state.value = _state.value.copy(

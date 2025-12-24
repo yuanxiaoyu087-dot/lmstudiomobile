@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,9 +50,6 @@ fun ChatScreen(
         },
         bottomBar = {
             Column {
-                if (state.isModelLoaded) {
-                    // Metrics bar can be added here
-                }
                 MessageInputBar(
                     message = messageText,
                     onMessageChange = { messageText = it },
@@ -69,7 +67,9 @@ fun ChatScreen(
         Box(modifier = Modifier.padding(padding)) {
             if (!state.isModelLoaded) {
                 NoModelLoadedScreen(
-                    onLoadModel = onNavigateToModels
+                    lastUsedModel = state.loadedModel,
+                    onLoadModel = onNavigateToModels,
+                    onLoadLastUsed = { state.loadedModel?.let { viewModel.loadChat(chatId) } } // Placeholder, logic in VM
                 )
             } else {
                 val messages = messagesState
@@ -121,11 +121,15 @@ fun ChatTopBar(
                     )
                 }
             }
-        })
         }
+    )
+}
+
 @Composable
 fun NoModelLoadedScreen(
-    onLoadModel: () -> Unit
+    lastUsedModel: com.lmstudio.mobile.domain.model.LLMModel?,
+    onLoadModel: () -> Unit,
+    onLoadLastUsed: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -144,8 +148,28 @@ fun NoModelLoadedScreen(
                 text = "No Model Loaded",
                 style = MaterialTheme.typography.headlineMedium
             )
-            Button(onClick = onLoadModel) {
-                Text("Load Model")
+            
+            Button(
+                onClick = onLoadModel,
+                modifier = Modifier.fillMaxWidth(0.7f)
+            ) {
+                Text("Go to Models")
+            }
+
+            if (lastUsedModel != null) {
+                OutlinedButton(
+                    onClick = onLoadLastUsed,
+                    modifier = Modifier.fillMaxWidth(0.7f)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Load Last Used")
+                        Text(
+                            text = lastUsedModel.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
             }
         }
     }
