@@ -2,7 +2,9 @@ package com.lmstudio.mobile.ui.screens.chat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Logout
@@ -75,9 +77,18 @@ fun ChatScreen(
                 )
             } else {
                 val messages = messagesState
+                val listState = rememberLazyListState()
+                
+                // Auto-scroll to bottom when new messages arrive
+                LaunchedEffect(messages.size) {
+                    if (messages.isNotEmpty()) {
+                        listState.animateScrollToItem(messages.size - 1)
+                    }
+                }
+                
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    reverseLayout = true,
+                    state = listState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

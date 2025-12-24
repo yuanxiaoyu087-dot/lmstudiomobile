@@ -31,6 +31,7 @@ class AppPreferences @Inject constructor(
         val N_GPU_LAYERS = intPreferencesKey("n_gpu_layers")
         val CONTEXT_SIZE = intPreferencesKey("context_size")
         val AUTO_SAVE_CHATS = booleanPreferencesKey("auto_save_chats")
+        val LAST_USED_MODEL_PATH = stringPreferencesKey("last_used_model_path")
     }
 
     val darkMode: Flow<Boolean> = dataStore.data.map { it[DARK_MODE] ?: false }
@@ -98,5 +99,13 @@ class AppPreferences @Inject constructor(
 
     suspend fun setAutoSaveChats(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[AUTO_SAVE_CHATS] = enabled }
+    }
+
+    suspend fun getLastUsedModelPath(): String? {
+        return dataStore.data.first()[LAST_USED_MODEL_PATH]
+    }
+
+    suspend fun setLastUsedModelPath(path: String) {
+        dataStore.edit { preferences -> preferences[LAST_USED_MODEL_PATH] = path }
     }
 }

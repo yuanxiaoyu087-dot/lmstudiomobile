@@ -13,13 +13,15 @@ import javax.inject.Inject
 
 data class HistoryState(
     val chats: List<Chat> = emptyList(),
+    val chatsByModel: Map<String, List<Chat>> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val modelRepository: com.lmstudio.mobile.data.repository.ModelRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HistoryState())
@@ -38,8 +40,12 @@ class HistoryViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             try {
                 chatRepository.getAllChats().collect { chats ->
+                    val sortedChats = chats.sortedByDescending { it.updatedAt }
+                    // Group chats by modelId
+                    val chatsByModel = sortedChats.groupBy { it.modelId ?: "Unknown" }
                     _state.value = _state.value.copy(
-                        chats = chats.sortedByDescending { it.updatedAt },
+                        chats = sortedChats,
+                        chatsByModel = chatsByModel,
                         isLoading = false
                     )
                 }

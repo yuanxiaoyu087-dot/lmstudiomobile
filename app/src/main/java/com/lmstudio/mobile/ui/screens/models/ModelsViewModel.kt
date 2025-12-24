@@ -29,7 +29,8 @@ data class ModelsState(
 @HiltViewModel
 class ModelsViewModel @Inject constructor(
     private val modelRepository: ModelRepository,
-    private val inferenceManager: InferenceManager
+    private val inferenceManager: InferenceManager,
+    private val appPreferences: com.lmstudio.mobile.data.local.preferences.AppPreferences
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ModelsState())
@@ -56,6 +57,7 @@ class ModelsViewModel @Inject constructor(
                 inferenceManager.loadModel(model.path, config).fold(
                     onSuccess = {
                         modelRepository.setModelLoaded(modelId)
+                        appPreferences.setLastUsedModelPath(model.path)
                         _state.value = _state.value.copy(isLoading = false)
                     },
                     onFailure = { error ->

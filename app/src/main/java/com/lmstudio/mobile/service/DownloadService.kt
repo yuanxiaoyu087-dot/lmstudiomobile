@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -98,13 +97,18 @@ class DownloadService : Service() {
             val fileSize = connection.contentLength
             val input = connection.getInputStream()
 
-            val publicDir = File(Environment.getExternalStorageDirectory(), "LM studio Mobile")
-            if (!publicDir.exists()) {
-                publicDir.mkdirs()
+            // Use app's external files directory instead of public storage
+            val modelsDir = File(getExternalFilesDir(null), "models")
+            if (!modelsDir.exists()) {
+                modelsDir.mkdirs()
             }
             
             val fileName = modelId.substringAfterLast("/").replace(".gguf", "") + ".gguf"
-            val outputFile = File(publicDir, fileName)
+            val outputFile = File(modelsDir, fileName)
+            
+            // Create parent directories if they don't exist
+            outputFile.parentFile?.mkdirs()
+            
             val output = FileOutputStream(outputFile)
 
             val data = ByteArray(8192)

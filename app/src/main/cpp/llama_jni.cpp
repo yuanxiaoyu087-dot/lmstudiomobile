@@ -89,43 +89,81 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
     std::lock_guard<std::mutex> lock(llama_ctx->mutex);
 
     const char* prompt_str = env->GetStringUTFChars(prompt, nullptr);
+    if (!prompt_str) {
+        return env->NewStringUTF("");
+    }
     
+    bool isPromptEmpty = (strlen(prompt_str) == 0);
+    
+    // If this is the first call (n_past == 0) and prompt is not empty, tokenize and decode the prompt
     if (llama_ctx->n_past == 0) {
+        if (isPromptEmpty) {
+            // Empty prompt on first call - nothing to do
+            env->ReleaseStringUTFChars(prompt, prompt_str);
+            return env->NewStringUTF("");
+        }
+        
         int n_tokens = -llama_tokenize(llama_ctx->vocab, prompt_str, strlen(prompt_str), nullptr, 0, true, true);
+        if (n_tokens <= 0) {
+            env->ReleaseStringUTFChars(prompt, prompt_str);
+            return env->NewStringUTF("");
+        }
+        
         llama_ctx->tokens_list.resize(n_tokens);
         llama_tokenize(llama_ctx->vocab, prompt_str, strlen(prompt_str), llama_ctx->tokens_list.data(), n_tokens, true, true);
+        
+        // Decode the prompt tokens
+        llama_batch batch = llama_batch_init(n_tokens, 0, 1);
+        for (int i = 0; i < n_tokens; ++i) {
+            batch.token[i] = llama_ctx->tokens_list[i];
+            batch.pos[i] = i;
+            batch.n_seq_id[i] = 1;
+            batch.seq_id[i][0] = 0;
+            batch.logits[i] = (i == n_tokens - 1);
+        }
+
+        if (llama_decode(llama_ctx->ctx, batch)) {
+            LOGE("Decode failed");
+            llama_batch_free(batch);
+            llama_ctx->tokens_list.clear();
+            env->ReleaseStringUTFChars(prompt, prompt_str);
+            return env->NewStringUTF("");
+        }
+        
+        llama_ctx->n_past = n_tokens;
+        llama_batch_free(batch);
     }
+    
     env->ReleaseStringUTFChars(prompt, prompt_str);
 
-    if (llama_ctx->tokens_list.empty()) return env->NewStringUTF("");
-
-    llama_batch batch = llama_batch_init(llama_ctx->tokens_list.size(), 0, 1);
-    for (int i = 0; i < (int)llama_ctx->tokens_list.size(); ++i) {
-        batch.token[i] = llama_ctx->tokens_list[i];
-        batch.pos[i] = llama_ctx->n_past + i;
-        batch.n_seq_id[i] = 1;
-        batch.seq_id[i][0] = 0;
-        batch.logits[i] = (i == (int)llama_ctx->tokens_list.size() - 1);
+    // Sample next token
+    llama_token id = llama_sampler_sample(llama_ctx->sampler, llama_ctx->ctx, -1);
+    if (llama_vocab_is_eog(llama_ctx->vocab, id)) {
+        return env->NewStringUTF("");
     }
 
+    // Decode the new token
+    llama_batch batch = llama_batch_init(1, 0, 1);
+    batch.token[0] = id;
+    batch.pos[0] = llama_ctx->n_past;
+    batch.n_seq_id[0] = 1;
+    batch.seq_id[0][0] = 0;
+    batch.logits[0] = true;
+
     if (llama_decode(llama_ctx->ctx, batch)) {
-        LOGE("Decode failed");
+        LOGE("Decode failed for generated token");
         llama_batch_free(batch);
         return env->NewStringUTF("");
     }
     
-    llama_ctx->n_past += llama_ctx->tokens_list.size();
-    llama_ctx->tokens_list.clear();
+    llama_ctx->n_past++;
     llama_batch_free(batch);
 
-    llama_token id = llama_sampler_sample(llama_ctx->sampler, llama_ctx->ctx, -1);
-    if (llama_vocab_is_eog(llama_ctx->vocab, id)) return env->NewStringUTF("");
-
+    // Convert token to text
     char buf[128];
     int n = llama_token_to_piece(llama_ctx->vocab, id, buf, sizeof(buf), 0, true);
     if (n < 0) return env->NewStringUTF("");
     
-    llama_ctx->tokens_list.push_back(id);
     return env->NewStringUTF(std::string(buf, n).c_str());
 }
 
@@ -135,6 +173,15 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeUnloadModel(JNIEnv*, jo
         delete reinterpret_cast<LlamaContext*>(contextPtr);
         LOGI("Native model deleted");
     }
+}
+
+JNIEXPORT void JNICALL
+Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeResetContext(JNIEnv*, jobject, jlong contextPtr) {
+    LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
+    if (!llama_ctx) return;
+    std::lock_guard<std::mutex> lock(llama_ctx->mutex);
+    llama_ctx->n_past = 0;
+    llama_ctx->tokens_list.clear();
 }
 
 JNIEXPORT jfloatArray JNICALL

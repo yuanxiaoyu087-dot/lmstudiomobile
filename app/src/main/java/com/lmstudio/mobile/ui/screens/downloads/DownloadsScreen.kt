@@ -138,22 +138,46 @@ fun DownloadsScreen(
                 state.activeDownloads.forEach { (id, progress) ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (progress.error != null) 
+                                MaterialTheme.colorScheme.errorContainer 
+                            else 
+                                MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    id.substringAfterLast("/"),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text("${progress.progress}%")
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        id.substringAfterLast("/"),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (progress.error != null) {
+                                        Text(
+                                            progress.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            modifier = Modifier.padding(top = 4.dp)
+                                        )
+                                    }
+                                }
+                                if (progress.error == null) {
+                                    Text("${progress.progress}%")
+                                } else {
+                                    Icon(
+                                        Icons.Default.Error,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
-                            LinearProgressIndicator(
-                                progress = { progress.progress / 100f },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            )
+                            if (progress.error == null) {
+                                LinearProgressIndicator(
+                                    progress = { progress.progress / 100f },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                )
+                            }
                         }
                     }
                 }

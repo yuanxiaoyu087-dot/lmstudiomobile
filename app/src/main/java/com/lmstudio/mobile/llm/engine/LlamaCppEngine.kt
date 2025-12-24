@@ -44,6 +44,7 @@ class LlamaCppEngine @Inject constructor(
     ): String
 
     private external fun nativeUnloadModel(contextPtr: Long)
+    private external fun nativeResetContext(contextPtr: Long)
 
     private external fun nativeGetMemoryUsage(contextPtr: Long): FloatArray
 
@@ -88,15 +89,23 @@ class LlamaCppEngine @Inject constructor(
                 return@launch
             }
 
-            var token: String
-            do {
-                token = nativeGenerateToken(contextPtr, prompt)
+            // Reset context for new generation
+            nativeResetContext(contextPtr)
+            
+            // First call with prompt to initialize
+            var token = nativeGenerateToken(contextPtr, prompt)
+            var hasMoreTokens = token.isNotEmpty()
+            
+            while (hasMoreTokens) {
                 if (token.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
                         onToken(token)
                     }
                 }
-            } while (token.isNotEmpty())
+                // Continue generation with empty string to get next tokens
+                token = nativeGenerateToken(contextPtr, "")
+                hasMoreTokens = token.isNotEmpty()
+            }
 
             withContext(Dispatchers.Main) {
                 onComplete()

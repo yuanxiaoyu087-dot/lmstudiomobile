@@ -16,6 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -26,7 +27,8 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val modelRepository: ModelRepository,
     private val messageDao: MessageDao,
-    private val inferenceManager: InferenceManager
+    private val inferenceManager: InferenceManager,
+    private val appPreferences: com.lmstudio.mobile.data.local.preferences.AppPreferences
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -72,9 +74,20 @@ class ChatViewModel @Inject constructor(
 
     fun loadLastUsedModel() {
         viewModelScope.launch {
-            val lastUsed = modelRepository.getLoadedModel() ?: return@launch
+            // Try to get last used model from preferences first
+            val lastUsedPath = appPreferences.getLastUsedModelPath()
+            val modelToLoad = if (lastUsedPath != null) {
+                modelRepository.getModelByPath(lastUsedPath)
+            } else {
+                modelRepository.getLoadedModel()
+            }
+            
+            val model = modelToLoad ?: return@launch
             _state.value = _state.value.copy(isLoading = true)
-            inferenceManager.loadModel(lastUsed.path, InferenceConfig()).onFailure {
+            inferenceManager.loadModel(model.path, InferenceConfig()).onSuccess {
+                modelRepository.setModelLoaded(model.id)
+                appPreferences.setLastUsedModelPath(model.path)
+            }.onFailure {
                 _state.value = _state.value.copy(isLoading = false)
             }
         }
@@ -82,6 +95,11 @@ class ChatViewModel @Inject constructor(
 
     fun ejectModel() {
         viewModelScope.launch {
+            // Save current model path before ejecting
+            val currentModel = modelRepository.getLoadedModel()
+            if (currentModel != null) {
+                appPreferences.setLastUsedModelPath(currentModel.path)
+            }
             inferenceManager.ejectModel()
             modelRepository.unloadAllModels()
             // State collection in observeInferenceState will handle UI update
@@ -92,16 +110,27 @@ class ChatViewModel @Inject constructor(
         if (content.isBlank() || !inferenceManager.isModelLoaded()) return
 
         viewModelScope.launch {
+            val autoSave = appPreferences.isAutoSaveChats()
             val chatId = _state.value.currentChat?.id ?: run {
                 val newChat = com.lmstudio.mobile.domain.model.Chat(
                     id = java.util.UUID.randomUUID().toString(),
                     title = content.take(50),
                     createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = System.currentTimeMillis(),
+                    modelId = modelRepository.getLoadedModel()?.id
                 )
-                chatRepository.insertChat(newChat)
+                if (autoSave) {
+                    chatRepository.insertChat(newChat)
+                }
                 _state.value = _state.value.copy(currentChat = newChat)
                 newChat.id
+            }
+
+            // Load all previous messages for context
+            val previousMessages = if (chatId != "new") {
+                messageDao.getMessagesByChat(chatId).first().map { it.toDomain() }
+            } else {
+                emptyList()
             }
 
             val userMessage = Message(
@@ -111,15 +140,21 @@ class ChatViewModel @Inject constructor(
                 content = content,
                 timestamp = System.currentTimeMillis()
             )
-            messageDao.insertMessage(userMessage.toEntity())
+            
+            if (autoSave) {
+                messageDao.insertMessage(userMessage.toEntity())
+            }
 
             _state.value = _state.value.copy(isGenerating = true)
 
             var assistantContent = ""
             val assistantMessageId = java.util.UUID.randomUUID().toString()
 
+            // Pass all messages including the new user message
+            val allMessages = previousMessages + userMessage
+
             inferenceManager.generateCompletion(
-                messages = listOf(userMessage),
+                messages = allMessages,
                 onToken = { token ->
                     assistantContent += token
                 },
@@ -132,7 +167,11 @@ class ChatViewModel @Inject constructor(
                             content = assistantContent,
                             timestamp = System.currentTimeMillis()
                         )
-                        messageDao.insertMessage(assistantMessage.toEntity())
+                        if (autoSave) {
+                            messageDao.insertMessage(assistantMessage.toEntity())
+                            // Update chat timestamp
+                            chatRepository.renameChat(chatId, _state.value.currentChat?.title ?: content.take(50))
+                        }
                         _state.value = _state.value.copy(isGenerating = false)
                     }
                 }
@@ -165,7 +204,13 @@ class ChatViewModel @Inject constructor(
                     isLoading = false
                 )
             } else {
-                val lastUsed = modelRepository.getLoadedModel()
+                // Try to get last used model from preferences
+                val lastUsedPath = appPreferences.getLastUsedModelPath()
+                val lastUsed = if (lastUsedPath != null) {
+                    modelRepository.getModelByPath(lastUsedPath)
+                } else {
+                    modelRepository.getLoadedModel()
+                }
                 _state.value = _state.value.copy(
                     isModelLoaded = false,
                     loadedModel = lastUsed,

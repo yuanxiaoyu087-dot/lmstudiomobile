@@ -97,14 +97,58 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.chats, key = { it.id }) { chat ->
-                    ChatHistoryCard(
-                        chat = chat,
-                        onChatClick = { onNavigateToChat(chat.id) },
-                        onDelete = { viewModel.deleteChat(chat.id) }
-                    )
+                // Group chats by model
+                state.chatsByModel.forEach { (modelId, chats) ->
+                    item(key = "model_$modelId") {
+                        ModelGroupHeader(
+                            modelName = modelId,
+                            chatCount = chats.size
+                        )
+                    }
+                    items(chats, key = { it.id }) { chat ->
+                        ChatHistoryCard(
+                            chat = chat,
+                            onChatClick = { onNavigateToChat(chat.id) },
+                            onDelete = { viewModel.deleteChat(chat.id) },
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    }
+                    item(key = "divider_$modelId") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ModelGroupHeader(
+    modelName: String,
+    chatCount: Int
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (modelName == "Unknown") "No Model" else modelName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = "$chatCount chat${if (chatCount != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
@@ -114,7 +158,8 @@ fun HistoryScreen(
 fun ChatHistoryCard(
     chat: Chat,
     onChatClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
