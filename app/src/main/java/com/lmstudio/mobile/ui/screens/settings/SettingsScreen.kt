@@ -69,6 +69,26 @@ fun SettingsScreen(
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+            // Server Settings
+            SettingsSection(title = "Local Server Settings") {
+                SettingsInfoItem(
+                    title = "Local API Server",
+                    value = "Running on port 8080"
+                )
+                SettingsInfoItem(
+                    title = "Base URL",
+                    value = "http://localhost:8080/v1"
+                )
+                Text(
+                    text = "External access via device IP. Supports OpenAI-compatible streaming (SSE).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
             // App Settings
             SettingsSection(title = "App Settings") {
                 SettingsSwitchItem(

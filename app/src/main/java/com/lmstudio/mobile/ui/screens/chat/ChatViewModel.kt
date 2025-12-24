@@ -9,7 +9,9 @@ import com.lmstudio.mobile.data.repository.ChatRepository
 import com.lmstudio.mobile.data.repository.ModelRepository
 import com.lmstudio.mobile.domain.model.Message
 import com.lmstudio.mobile.domain.model.MessageRole
+import com.lmstudio.mobile.llm.inference.InferenceConfig
 import com.lmstudio.mobile.llm.inference.InferenceManager
+import com.lmstudio.mobile.llm.inference.InferenceState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,25 +44,55 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    init {
+        observeInferenceState()
+        // Initial sync
+        updateModelStatus(inferenceManager.state.value)
+    }
+
+    private fun observeInferenceState() {
+        viewModelScope.launch {
+            inferenceManager.state.collect { state ->
+                updateModelStatus(state)
+            }
+        }
+    }
+
     fun loadChat(chatId: String) {
         _currentChatId.value = chatId
         viewModelScope.launch {
             if (chatId == "new") {
-                _state.value = ChatState()
+                _state.value = _state.value.copy(currentChat = null)
             } else {
                 val chat = chatRepository.getChatById(chatId)
                 _state.value = _state.value.copy(currentChat = chat)
             }
-            updateModelStatus()
+        }
+    }
+
+    fun loadLastUsedModel() {
+        viewModelScope.launch {
+            val lastUsed = modelRepository.getLoadedModel() ?: return@launch
+            _state.value = _state.value.copy(isLoading = true)
+            inferenceManager.loadModel(lastUsed.path, InferenceConfig()).onFailure {
+                _state.value = _state.value.copy(isLoading = false)
+            }
+        }
+    }
+
+    fun ejectModel() {
+        viewModelScope.launch {
+            inferenceManager.ejectModel()
+            modelRepository.unloadAllModels()
+            // State collection in observeInferenceState will handle UI update
         }
     }
 
     fun sendMessage(content: String) {
-        if (content.isBlank() || !_state.value.isModelLoaded) return
+        if (content.isBlank() || !inferenceManager.isModelLoaded()) return
 
         viewModelScope.launch {
             val chatId = _state.value.currentChat?.id ?: run {
-                // Create new chat
                 val newChat = com.lmstudio.mobile.domain.model.Chat(
                     id = java.util.UUID.randomUUID().toString(),
                     title = content.take(50),
@@ -72,7 +104,6 @@ class ChatViewModel @Inject constructor(
                 newChat.id
             }
 
-            // Save user message
             val userMessage = Message(
                 id = java.util.UUID.randomUUID().toString(),
                 chatId = chatId,
@@ -123,13 +154,24 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun updateModelStatus() {
+    private fun updateModelStatus(inferenceState: InferenceState) {
         viewModelScope.launch {
-            val loadedModel = modelRepository.getLoadedModel()
-            _state.value = _state.value.copy(
-                isModelLoaded = inferenceManager.isModelLoaded(),
-                loadedModel = loadedModel
-            )
+            val isLoaded = (inferenceState == InferenceState.READY || inferenceState == InferenceState.GENERATING)
+            if (isLoaded) {
+                val loadedModel = modelRepository.getLoadedModel()
+                _state.value = _state.value.copy(
+                    isModelLoaded = true,
+                    loadedModel = loadedModel,
+                    isLoading = false
+                )
+            } else {
+                val lastUsed = modelRepository.getLoadedModel()
+                _state.value = _state.value.copy(
+                    isModelLoaded = false,
+                    loadedModel = lastUsed,
+                    isLoading = (inferenceState == InferenceState.LOADING)
+                )
+            }
         }
     }
 }

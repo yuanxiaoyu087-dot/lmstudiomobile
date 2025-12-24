@@ -3,14 +3,16 @@ package com.lmstudio.mobile.util
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
+import android.os.Environment
 import android.os.StatFs
 import com.lmstudio.mobile.domain.model.DeviceCapabilities
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DeviceUtils @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     fun getDeviceCapabilities(): DeviceCapabilities {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -37,11 +39,15 @@ class DeviceUtils @Inject constructor(
     }
 
     private fun getStorageStats(): StorageStats {
-        val externalDir = context.getExternalFilesDir(null) ?: return StorageStats(0L, 0L)
-        val stat = StatFs(externalDir.path)
-        val total = stat.blockCountLong * stat.blockSizeLong
-        val available = stat.availableBlocksLong * stat.blockSizeLong
-        return StorageStats(total, available)
+        return try {
+            val path = Environment.getDataDirectory()
+            val stat = StatFs(path.path)
+            val total = stat.blockCountLong * stat.blockSizeLong
+            val available = stat.availableBlocksLong * stat.blockSizeLong
+            StorageStats(total, available)
+        } catch (e: Exception) {
+            StorageStats(0L, 0L)
+        }
     }
 
     private fun checkVulkanSupport(): Boolean {
@@ -62,4 +68,3 @@ class DeviceUtils @Inject constructor(
 
     private data class StorageStats(val total: Long, val available: Long)
 }
-

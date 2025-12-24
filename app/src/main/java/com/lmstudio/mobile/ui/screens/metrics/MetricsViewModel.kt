@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lmstudio.mobile.llm.engine.LLMEngine
 import com.lmstudio.mobile.llm.monitoring.ResourceMetrics
 import com.lmstudio.mobile.util.DeviceUtils
+import com.lmstudio.mobile.util.ResourceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -16,6 +17,7 @@ import javax.inject.Inject
 
 data class MetricsState(
     val metrics: ResourceMetrics = ResourceMetrics(0f, 0f, 0f, 0f),
+    val systemMetrics: com.lmstudio.mobile.domain.model.SystemMetrics? = null,
     val modelInfo: ModelInfo? = null,
     val deviceInfo: String = "Unknown"
 )
@@ -29,7 +31,8 @@ data class ModelInfo(
 @HiltViewModel
 class MetricsViewModel @Inject constructor(
     private val llmEngine: LLMEngine,
-    private val deviceUtils: DeviceUtils
+    private val deviceUtils: DeviceUtils,
+    private val resourceMonitor: ResourceMonitor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MetricsState())
@@ -71,8 +74,13 @@ class MetricsViewModel @Inject constructor(
         monitoringJob?.cancel()
         monitoringJob = viewModelScope.launch {
             while (true) {
-                val metrics = llmEngine.getResourceUsage()
-                _state.value = _state.value.copy(metrics = metrics)
+                val engineMetrics = llmEngine.getResourceUsage()
+                val systemMetrics = resourceMonitor.getCurrentMetrics()
+                
+                _state.value = _state.value.copy(
+                    metrics = engineMetrics,
+                    systemMetrics = systemMetrics
+                )
                 delay(1000) // Update every second
             }
         }

@@ -16,5 +16,5 @@ interface HuggingFaceApi {
     ): List<HFModelDto>
 
     @GET("api/models/{modelId}")
-    suspend fun getModelDetails(@Path("modelId") modelId: String): ModelDetailsDto
+    suspend fun getModelDetails(@Path("modelId", encoded = true) modelId: String): ModelDetailsDto
 }

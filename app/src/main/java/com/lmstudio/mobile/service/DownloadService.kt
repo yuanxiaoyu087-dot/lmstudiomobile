@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Environment
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.lmstudio.mobile.data.repository.ModelRepository
 import com.lmstudio.mobile.domain.model.LLMModel
@@ -82,20 +83,27 @@ class DownloadService : Service() {
             .setOngoing(true)
 
         try {
-            val downloadUrl = "https://huggingface.co/$modelId/resolve/main/model.gguf"
+            // Updated logic to find GGUF file or use the provided path
+            val downloadUrl = if (modelId.contains(".gguf", ignoreCase = true)) {
+                 "https://huggingface.co/$modelId"
+            } else {
+                 "https://huggingface.co/$modelId/resolve/main/${modelId.substringAfterLast("/")}.gguf"
+            }
+            
+            Log.d("DownloadService", "Attempting download from: $downloadUrl")
+
             val url = URL(downloadUrl)
             val connection = url.openConnection()
             connection.connect()
             val fileSize = connection.contentLength
             val input = connection.getInputStream()
 
-            // Path: /storage/emulated/0/LM studio Mobile/
             val publicDir = File(Environment.getExternalStorageDirectory(), "LM studio Mobile")
             if (!publicDir.exists()) {
                 publicDir.mkdirs()
             }
             
-            val fileName = modelId.substringAfterLast("/") + ".gguf"
+            val fileName = modelId.substringAfterLast("/").replace(".gguf", "") + ".gguf"
             val outputFile = File(publicDir, fileName)
             val output = FileOutputStream(outputFile)
 
@@ -123,7 +131,6 @@ class DownloadService : Service() {
             output.close()
             input.close()
 
-            // Register in database
             val newModel = LLMModel(
                 id = modelId,
                 name = fileName,
@@ -148,6 +155,7 @@ class DownloadService : Service() {
             notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
 
         } catch (e: Exception) {
+            Log.e("DownloadService", "Download failed", e)
             downloadManager.setError(modelId, e.message ?: "Unknown error")
             notificationBuilder
                 .setContentText("Download failed: ${e.message}")
@@ -155,7 +163,6 @@ class DownloadService : Service() {
                 .setOngoing(false)
             notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
         } finally {
-            // Check if any other downloads are running before stopping foreground
             if (downloadManager.activeDownloads.value.isEmpty()) {
                 stopForeground(STOP_FOREGROUND_DETACH)
             }

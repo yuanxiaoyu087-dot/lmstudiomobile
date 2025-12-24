@@ -13,7 +13,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.lmstudio.mobile.domain.model.Chat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -22,6 +21,7 @@ import java.util.*
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
+    onNavigateToChat: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -46,7 +46,7 @@ fun HistoryScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Navigate to new chat - handled by navigation */ }
+                onClick = { onNavigateToChat("new") }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Chat")
             }
@@ -100,7 +100,7 @@ fun HistoryScreen(
                 items(state.chats, key = { it.id }) { chat ->
                     ChatHistoryCard(
                         chat = chat,
-                        onChatClick = { viewModel.navigateToChat(chat.id) },
+                        onChatClick = { onNavigateToChat(chat.id) },
                         onDelete = { viewModel.deleteChat(chat.id) }
                     )
                 }

@@ -104,7 +104,7 @@ All screens are **fully implemented** and **accessible** via bottom navigation:
 
 - **Streaming**: 
   - Token generation supports streaming
-  - Server-Sent Events not yet implemented for API server
+  - Server-Sent Events implemented for API server ✅
 
 ### 🔄 Ready for Testing
 
@@ -143,9 +143,7 @@ All screens are **fully implemented** and **accessible** via bottom navigation:
 
 ## Known Limitations
 
-1. **Model Downloads**: UI is ready, but actual file download needs service integration
-2. **API Server**: Local server exists but Server-Sent Events not implemented
-3. **GPU Acceleration**: Detection works, but needs testing with actual GPU
+1. **GPU Acceleration**: Detection works, but needs testing with actual GPU
 
 ## Summary
 
@@ -172,3 +170,20 @@ The project is **fully functional** with all major features implemented:
 - **API Server SSE**: Implemented Server-Sent Events (SSE) for the local API server, enabling real-time streaming for external clients.
 - **UX Improvements**: Added "Load Last Used" button on the main chat screen for quick access to the previous model.
 - **Storage Permissions**: Added necessary handling for storage access on different Android versions.
+
+### Version 1.0.1 (Fixing)
+- **Permission Fix**: Resolved "No requestable permission" error by optimizing permission requests for different Android versions (Scoped Storage / Tiramisu Notifications).
+- **Theme Sync**: Fixed a bug where the Dark Theme toggle wouldn't update the UI immediately; now synchronized via StateFlow in MainActivity.
+- **UI Logic**: Fixed Chat Screen layout where the message input bar was missing or misaligned when a model was loaded.
+- **Real-time Metrics**: Fixed empty monitoring data; metrics now correctly pull from both LLM engine and System Resource Monitor every second.
+- **Server UI**: Added a dedicated Local Server info section in Settings to show the API status and Base URL.
+- **Stability**: Fixed a crash in DeviceUtils related to storage statistics calculation on some devices.
+- **Compilation**: Fixed LLMModel constructor mismatch errors in DownloadService and ModelsViewModel.
+
+### Version 1.0.1 (Fixing 2)
+- **Navigation Architecture**: Redesigned the navigation graph using a root Scaffold to prevent UI overlap. Fixed the issue where the Bottom Navigation Bar was hiding the Chat input field.
+- **Smart Hugging Face Integration**: Implemented a "Files and Versions" equivalent logic. Users now see a selection dialog with all available GGUF quantizations and their sizes before downloading.
+- **Native Stability (KV-Cache)**: Overhauled the JNI layer (`llama_jni.cpp`) to use a persistent KV-cache. Fixed a critical crash during token generation and enabled real-time RAM usage tracking via `mlock`.
+- **History Navigation**: Enabled full interactivity in the History screen. Clicking on any saved chat now correctly navigates to the Chat screen and loads the corresponding message history.
+- **Instant UI Updates**: Improved state observation between the Inference Engine and UI. Actions like "Eject" or "Load Model" now reflect instantly on the Chat screen without requiring page reloads.
+- **Permission Cleanup**: Removed redundant storage permission requests for Android 11+ to eliminate the "No requestable permission" system error.

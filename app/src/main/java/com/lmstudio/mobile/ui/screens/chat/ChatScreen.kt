@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,32 +45,33 @@ fun ChatScreen(
                 isModelLoaded = state.isModelLoaded,
                 modelName = state.loadedModel?.name,
                 onNavigateToModels = onNavigateToModels,
-                onRenameChat = { viewModel.renameChat(it) },
-                onDeleteChat = { viewModel.deleteChat() }
+                onEjectModel = { viewModel.ejectModel() }
             )
         },
         bottomBar = {
-            Column {
+            if (state.isModelLoaded) {
                 MessageInputBar(
                     message = messageText,
-                    onMessageChange = { messageText = it },
+                    onValueChange = { messageText = it },
                     onSendMessage = {
                         if (messageText.isNotBlank()) {
                             viewModel.sendMessage(messageText)
                             messageText = ""
                         }
                     },
-                    enabled = state.isModelLoaded && !state.isGenerating
+                    enabled = !state.isGenerating
                 )
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            if (!state.isModelLoaded) {
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (!state.isModelLoaded) {
                 NoModelLoadedScreen(
                     lastUsedModel = state.loadedModel,
                     onLoadModel = onNavigateToModels,
-                    onLoadLastUsed = { state.loadedModel?.let { viewModel.loadChat(chatId) } } // Placeholder, logic in VM
+                    onLoadLastUsed = { viewModel.loadLastUsedModel() }
                 )
             } else {
                 val messages = messagesState
@@ -106,19 +108,34 @@ fun ChatTopBar(
     isModelLoaded: Boolean,
     modelName: String?,
     onNavigateToModels: () -> Unit,
-    onRenameChat: (String) -> Unit,
-    onDeleteChat: () -> Unit
+    onEjectModel: () -> Unit
 ) {
     CenterAlignedTopAppBar(
         title = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(chatTitle)
                 if (isModelLoaded && modelName != null) {
-                    Text(
-                        text = modelName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = modelName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        IconButton(
+                            onClick = onEjectModel,
+                            modifier = Modifier.size(24.dp).padding(start = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Logout,
+                                contentDescription = "Eject Model",
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -178,7 +195,7 @@ fun NoModelLoadedScreen(
 @Composable
 fun MessageInputBar(
     message: String,
-    onMessageChange: (String) -> Unit,
+    onValueChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     enabled: Boolean
 ) {
@@ -195,7 +212,7 @@ fun MessageInputBar(
         ) {
             OutlinedTextField(
                 value = message,
-                onValueChange = onMessageChange,
+                onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
                 enabled = enabled,
                 placeholder = { Text("Type a message...") },

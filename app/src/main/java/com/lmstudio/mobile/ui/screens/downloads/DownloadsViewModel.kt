@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lmstudio.mobile.data.remote.api.HuggingFaceApi
 import com.lmstudio.mobile.data.remote.dto.HFModelDto
+import com.lmstudio.mobile.data.remote.dto.ModelFile
 import com.lmstudio.mobile.domain.model.DeviceCapabilities
 import com.lmstudio.mobile.service.DownloadManager
 import com.lmstudio.mobile.service.DownloadProgress
@@ -26,7 +27,9 @@ data class DownloadsState(
     val error: String? = null,
     val deviceCapabilities: DeviceCapabilities? = null,
     val isNetworkAvailable: Boolean = true,
-    val activeDownloads: Map<String, DownloadProgress> = emptyMap()
+    val activeDownloads: Map<String, DownloadProgress> = emptyMap(),
+    val selectedModelFiles: List<ModelFile>? = null,
+    val selectedModelId: String? = null
 )
 
 @HiltViewModel
@@ -103,7 +106,8 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, isNetworkAvailable = true)
             try {
-                val results = huggingFaceApi.searchModels(query = query)
+                val searchQuery = if (query.contains("gguf", ignoreCase = true)) query else "$query gguf"
+                val results = huggingFaceApi.searchModels(query = searchQuery)
                 _state.value = _state.value.copy(
                     models = results,
                     isLoading = false
@@ -117,7 +121,32 @@ class DownloadsViewModel @Inject constructor(
         }
     }
 
-    fun downloadModel(model: HFModelDto) {
-        DownloadService.start(context, model.id)
+    fun selectModel(model: HFModelDto) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            try {
+                val details = huggingFaceApi.getModelDetails(model.id)
+                val ggufFiles = details.siblings
+                    .filter { it.rfilename.endsWith(".gguf", ignoreCase = true) }
+                    .sortedBy { it.size ?: Long.MAX_VALUE }
+                
+                _state.value = _state.value.copy(
+                    selectedModelFiles = ggufFiles,
+                    selectedModelId = model.id,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoading = false, error = "Failed to fetch files: ${e.message}")
+            }
+        }
+    }
+
+    fun dismissFileSelection() {
+        _state.value = _state.value.copy(selectedModelFiles = null, selectedModelId = null)
+    }
+
+    fun downloadFile(modelId: String, fileName: String) {
+        DownloadService.start(context, "$modelId/resolve/main/$fileName")
+        dismissFileSelection()
     }
 }

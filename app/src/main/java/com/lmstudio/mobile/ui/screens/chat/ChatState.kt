@@ -8,6 +8,6 @@ data class ChatState(
     val isModelLoaded: Boolean = false,
     val loadedModel: LLMModel? = null,
     val isGenerating: Boolean = false,
+    val isLoading: Boolean = false,
     val error: String? = null
 )
-
