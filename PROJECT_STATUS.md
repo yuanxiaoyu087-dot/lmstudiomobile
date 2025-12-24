@@ -197,3 +197,31 @@ The project is **fully functional** with all major features implemented:
 - **Chat History Grouping**: Redesigned History screen to group chats by model. Added model group headers showing model name and chat count. Chats are now organized under their respective models for better organization. Each chat is associated with its model ID (`modelId`) when created.
 - **Message Context**: Fixed message generation to include full chat history. The `sendMessage` function now loads all previous messages from the chat and passes them to the inference manager, ensuring proper context for model responses.
 - **Model Path Persistence**: Added automatic saving of model paths in preferences when models are loaded through ModelsViewModel, ensuring consistent "Load Last Used" functionality across all entry points.
+
+### Version 1.0.4
+- **Native Decoding Fix**: Fixed critical "Decode failed" errors in `llama_jni.cpp` by properly initializing `batch.n_tokens` before decoding operations. Improved error handling with detailed error code logging for better debugging. Fixed token generation flow - tokens are now correctly converted to text before being added to context, ensuring proper sequential generation.
+- **Downloads Screen Stability**: Fixed NullPointerException crash in DownloadsScreen when displaying model file selection dialog. Replaced unsafe null assertion (`!!`) with safe `let` block for `selectedModelFiles`, preventing crashes when dialog state is cleared.
+- **Universal GGUF Model Support**: Implemented intelligent model type detection and automatic chat template selection. The system now automatically detects model type by name (Gemma, Llama 2/3, Mistral, Phi, Qwen, DeepSeek) and applies the correct chat template format. Added support for 8 different chat templates:
+  - **Gemma**: `<start_of_turn>user/model` format with proper system message handling
+  - **Llama 3**: `<|start_header_id|>` format with system/user/assistant headers
+  - **Llama 2**: `[INST]` format with `<<SYS>>` system message support
+  - **Mistral**: `[INST]` format compatible with Mistral v1/v3/v7
+  - **Phi**: `<|system/user/assistant|>` format with proper message boundaries
+  - **Qwen**: `<|im_start|>` ChatML format
+  - **DeepSeek**: Simple User/Assistant format
+  - **Universal**: Fallback format for unknown models using simple "User:"/"Assistant:" prefixes
+- **Smart Prompt Formatting**: Each chat template implementation includes proper handling of system messages, message boundaries, and generation prompts. System messages are correctly integrated where supported (Llama 2/3, Phi, Qwen) or prepended to user messages where not directly supported (Gemma, Mistral).
+- **Model Compatibility**: The app now works seamlessly with any GGUF model format. Unknown models automatically fall back to the universal format, ensuring compatibility with future model releases and custom quantizations.
+### Version 1.0.4 (Stability & Download Control)
+- **OpenMP Thread Management**: Fixed SIGABRT "Fatal signal 6" crash during LLM inference by reducing thread allocation from `Runtime.availableProcessors()` to `Math.max(1, availableProcessors() / 2)` in InferenceConfig. This prevents thread pool exhaustion and memory corruption in the OpenMP library (__kmp_fork_call).
+- **Token Generation Safety**: Added maximum token limit (500 tokens) in LlamaCppEngine.generateResponse() to prevent infinite token generation loops that caused app crashes and resource exhaustion during chat inference.
+- **Download Storage Reliability**: Fixed "Failed to ensure /storage/0000-0000/Android/data/" error by replacing direct storage access with safe app-scoped directory using `getExternalFilesDir()` with automatic fallback to `cacheDir`. Added 30-second connection and read timeouts to prevent indefinite hangs on network failures.
+- **Download Progress Display**: Enhanced download progress notification to show formatted file sizes and percentages (e.g., "50% - 500MB/1GB") for better user visibility. Added formatSize() helper for human-readable size formatting.
+- **Download Cancellation**: Implemented full download cancellation and pause/resume functionality:
+  - Added `cancelDownload()`, `pauseDownload()`, `resumeDownload()` methods to DownloadManager with reactive StateFlow tracking
+  - Integrated cancellation checks into DownloadService download loop - download stops immediately when cancelled and incomplete files are deleted
+  - Added pause/resume support - paused downloads can be resumed from the same position without data loss
+- **Download UI Controls**: Added Cancel (red X button) and Pause/Resume buttons to download cards in DownloadsScreen. Buttons provide visual feedback with state-dependent coloring and icons. Paused downloads show "Paused" status text with dimmed card background.
+- **ViewModel Integration**: Added `cancelDownload()` and `pauseDownload()` methods to DownloadsViewModel to bridge UI controls with download manager state.
+   
+```   

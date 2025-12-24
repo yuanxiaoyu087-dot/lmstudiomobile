@@ -12,6 +12,8 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val TAG = "LlamaCppEngine"
+
 @Singleton
 class LlamaCppEngine @Inject constructor(
     private val accelerationManager: AccelerationManager
@@ -24,8 +26,9 @@ class LlamaCppEngine @Inject constructor(
         init {
             try {
                 System.loadLibrary("llama_jni")
+                Log.i(TAG, "Native library 'llama_jni' loaded successfully")
             } catch (e: UnsatisfiedLinkError) {
-                Log.e("LlamaCppEngine", "Failed to load native library", e)
+                Log.e(TAG, "Failed to load native library: ${e.message}", e)
             }
         }
     }
@@ -53,7 +56,10 @@ class LlamaCppEngine @Inject constructor(
         config: InferenceConfig
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            Log.i(TAG, "loadModel: path=$modelPath, threads=${config.nThreads}, gpuLayers=${config.nGpuLayers}, contextSize=${config.contextSize}")
             val useVulkan = accelerationManager.isVulkanAvailable()
+            Log.d(TAG, "loadModel: vulkanAvailable=$useVulkan")
+            
             contextPtr = nativeLoadModel(
                 modelPath = modelPath,
                 nThreads = config.nThreads,
@@ -61,7 +67,10 @@ class LlamaCppEngine @Inject constructor(
                 contextSize = config.contextSize,
                 useVulkan = useVulkan
             )
+            Log.d(TAG, "loadModel: nativeLoadModel returned contextPtr=$contextPtr")
+            
             if (contextPtr == 0L) {
+                Log.e(TAG, "loadModel: FAILED - contextPtr is 0L (model not loaded)")
                 Result.failure(Exception("Failed to load model"))
             } else {
                 // Extract model info from path or config
@@ -70,10 +79,11 @@ class LlamaCppEngine @Inject constructor(
                     override val parameters: String? = null
                     override val contextLength: Int = config.contextSize
                 }
+                Log.i(TAG, "loadModel: SUCCESS - model=${currentModelInfo?.name}, contextPtr=$contextPtr")
                 Result.success(Unit)
             }
         } catch (e: Exception) {
-            Log.e("LlamaCppEngine", "Error loading model", e)
+            Log.e(TAG, "loadModel: EXCEPTION - ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -85,46 +95,69 @@ class LlamaCppEngine @Inject constructor(
     ): Job = CoroutineScope(Dispatchers.Default).launch {
         try {
             if (contextPtr == 0L) {
-                Log.e("LlamaCppEngine", "Model not loaded")
+                Log.e(TAG, "generateResponse: FAILED - Model not loaded (contextPtr=0)")
                 return@launch
             }
 
+            Log.i(TAG, "generateResponse: START - prompt length=${prompt.length}")
             // Reset context for new generation
             nativeResetContext(contextPtr)
+            Log.d(TAG, "generateResponse: context reset")
+            
+            // Limit token generation to prevent crashes
+            val maxTokens = 500
+            var tokenCount = 0
             
             // First call with prompt to initialize
+            Log.d(TAG, "generateResponse: generating first token with prompt")
             var token = nativeGenerateToken(contextPtr, prompt)
-            var hasMoreTokens = token.isNotEmpty()
+            var hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
             
             while (hasMoreTokens) {
                 if (token.isNotEmpty()) {
+                    Log.v(TAG, "generateResponse: token[$tokenCount]='${token.take(20)}'")
                     withContext(Dispatchers.Main) {
                         onToken(token)
                     }
+                    tokenCount++
+                } else {
+                    Log.d(TAG, "generateResponse: empty token at count=$tokenCount")
                 }
                 // Continue generation with empty string to get next tokens
                 token = nativeGenerateToken(contextPtr, "")
-                hasMoreTokens = token.isNotEmpty()
+                hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
+                
+                if (tokenCount >= maxTokens) {
+                    Log.w(TAG, "generateResponse: reached maxTokens limit ($maxTokens)")
+                    break
+                }
             }
 
+            Log.i(TAG, "generateResponse: COMPLETE - totalTokens=$tokenCount")
             withContext(Dispatchers.Main) {
                 onComplete()
             }
         } catch (e: Exception) {
-            Log.e("LlamaCppEngine", "Error generating response", e)
+            Log.e(TAG, "generateResponse: EXCEPTION - ${e.message}", e)
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
         }
     }
 
     override suspend fun ejectModel(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            Log.i(TAG, "ejectModel: START - contextPtr=$contextPtr")
             if (contextPtr != 0L) {
                 nativeUnloadModel(contextPtr)
+                Log.d(TAG, "ejectModel: native unload completed")
                 contextPtr = 0L
                 currentModelInfo = null
             }
+            Log.i(TAG, "ejectModel: SUCCESS")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("LlamaCppEngine", "Error ejecting model", e)
+            Log.e(TAG, "ejectModel: EXCEPTION - ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -139,6 +172,8 @@ class LlamaCppEngine @Inject constructor(
         } else {
             try {
                 val usage = nativeGetMemoryUsage(contextPtr)
+                Log.v(TAG, "getResourceUsage: cpu=${usage[0]}, ram=${usage[1]}, vram=${usage[2]}, gpu=${usage[3]}")
+                Log.v(TAG, "getResourceUsage: cpu=${usage[0]}, ram=${usage[1]}, vram=${usage[2]}, gpu=${usage[3]}")
                 ResourceMetrics(
                     cpuUsage = usage[0],
                     ramUsage = usage[1],
@@ -146,7 +181,7 @@ class LlamaCppEngine @Inject constructor(
                     gpuUsage = usage[3]
                 )
             } catch (e: Exception) {
-                Log.e("LlamaCppEngine", "Error getting resource usage", e)
+                Log.e(TAG, "getResourceUsage: EXCEPTION - ${e.message}", e)
                 ResourceMetrics(0f, 0f, 0f, 0f)
             }
         }

@@ -38,13 +38,13 @@ fun DownloadsScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions -> }
 
-    if (state.selectedModelFiles != null) {
+    state.selectedModelFiles?.let { files ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissFileSelection() },
             title = { Text("Select Quantization") },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                    items(state.selectedModelFiles!!) { file ->
+                    items(files) { file ->
                         ListItem(
                             headlineContent = { Text(file.rfilename) },
                             supportingContent = { 
@@ -141,6 +141,8 @@ fun DownloadsScreen(
                         colors = CardDefaults.cardColors(
                             containerColor = if (progress.error != null) 
                                 MaterialTheme.colorScheme.errorContainer 
+                            else if (progress.isPaused)
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
                             else 
                                 MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -160,6 +162,13 @@ fun DownloadsScreen(
                                             color = MaterialTheme.colorScheme.onErrorContainer,
                                             modifier = Modifier.padding(top = 4.dp)
                                         )
+                                    } else if (progress.isPaused) {
+                                        Text(
+                                            "Paused",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            modifier = Modifier.padding(top = 4.dp)
+                                        )
                                     }
                                 }
                                 if (progress.error == null) {
@@ -177,6 +186,49 @@ fun DownloadsScreen(
                                     progress = { progress.progress / 100f },
                                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                 )
+                            }
+                            
+                            // Cancel and Pause/Resume buttons
+                            if (progress.error == null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Button(
+                                        onClick = { viewModel.pauseDownload(id) },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    ) {
+                                        Icon(
+                                            if (progress.isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(if (progress.isPaused) "Resume" else "Pause")
+                                    }
+                                    
+                                    Button(
+                                        onClick = { viewModel.cancelDownload(id) },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error
+                                        )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Clear,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Cancel")
+                                    }
+                                }
                             }
                         }
                     }

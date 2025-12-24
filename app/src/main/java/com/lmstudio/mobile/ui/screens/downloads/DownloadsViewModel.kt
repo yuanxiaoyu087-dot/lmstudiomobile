@@ -149,4 +149,17 @@ class DownloadsViewModel @Inject constructor(
         DownloadService.start(context, "$modelId/resolve/main/$fileName")
         dismissFileSelection()
     }
+
+    fun cancelDownload(modelId: String) {
+        downloadManager.cancelDownload(modelId)
+    }
+
+    fun pauseDownload(modelId: String) {
+        val currentState = _state.value.activeDownloads[modelId]
+        if (currentState?.isPaused == true) {
+            downloadManager.resumeDownload(modelId)
+        } else {
+            downloadManager.pauseDownload(modelId)
+        }
+    }
 }

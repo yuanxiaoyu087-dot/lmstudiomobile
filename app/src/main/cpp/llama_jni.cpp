@@ -114,6 +114,7 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
         
         // Decode the prompt tokens
         llama_batch batch = llama_batch_init(n_tokens, 0, 1);
+        batch.n_tokens = n_tokens;
         for (int i = 0; i < n_tokens; ++i) {
             batch.token[i] = llama_ctx->tokens_list[i];
             batch.pos[i] = i;
@@ -122,10 +123,12 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
             batch.logits[i] = (i == n_tokens - 1);
         }
 
-        if (llama_decode(llama_ctx->ctx, batch)) {
-            LOGE("Decode failed");
+        int decode_result = llama_decode(llama_ctx->ctx, batch);
+        if (decode_result != 0) {
+            LOGE("Decode failed with code: %d", decode_result);
             llama_batch_free(batch);
             llama_ctx->tokens_list.clear();
+            llama_ctx->n_past = 0;
             env->ReleaseStringUTFChars(prompt, prompt_str);
             return env->NewStringUTF("");
         }
@@ -136,33 +139,39 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
     
     env->ReleaseStringUTFChars(prompt, prompt_str);
 
-    // Sample next token
+    // Sample next token from the logits
     llama_token id = llama_sampler_sample(llama_ctx->sampler, llama_ctx->ctx, -1);
+    
+    // Check for EOG token
     if (llama_vocab_is_eog(llama_ctx->vocab, id)) {
         return env->NewStringUTF("");
     }
 
-    // Decode the new token
+    // Convert token to text before adding to context
+    char buf[128];
+    int n = llama_token_to_piece(llama_ctx->vocab, id, buf, sizeof(buf), 0, true);
+    if (n < 0) {
+        return env->NewStringUTF("");
+    }
+    
+    // Add the generated token to the context for next generation
     llama_batch batch = llama_batch_init(1, 0, 1);
+    batch.n_tokens = 1;
     batch.token[0] = id;
     batch.pos[0] = llama_ctx->n_past;
     batch.n_seq_id[0] = 1;
     batch.seq_id[0][0] = 0;
     batch.logits[0] = true;
 
-    if (llama_decode(llama_ctx->ctx, batch)) {
-        LOGE("Decode failed for generated token");
+    int decode_result = llama_decode(llama_ctx->ctx, batch);
+    if (decode_result != 0) {
+        LOGE("Decode failed for generated token with code: %d", decode_result);
         llama_batch_free(batch);
         return env->NewStringUTF("");
     }
     
     llama_ctx->n_past++;
     llama_batch_free(batch);
-
-    // Convert token to text
-    char buf[128];
-    int n = llama_token_to_piece(llama_ctx->vocab, id, buf, sizeof(buf), 0, true);
-    if (n < 0) return env->NewStringUTF("");
     
     return env->NewStringUTF(std::string(buf, n).c_str());
 }

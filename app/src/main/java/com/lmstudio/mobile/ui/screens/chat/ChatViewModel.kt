@@ -1,5 +1,6 @@
 package com.lmstudio.mobile.ui.screens.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lmstudio.mobile.data.local.database.dao.MessageDao
@@ -21,6 +22,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "ChatViewModel"
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -47,6 +50,7 @@ class ChatViewModel @Inject constructor(
     }
 
     init {
+        Log.d(TAG, "ChatViewModel initialized")
         observeInferenceState()
         // Initial sync
         updateModelStatus(inferenceManager.state.value)
@@ -55,27 +59,33 @@ class ChatViewModel @Inject constructor(
     private fun observeInferenceState() {
         viewModelScope.launch {
             inferenceManager.state.collect { state ->
+                Log.d(TAG, "InferenceState changed to: $state")
                 updateModelStatus(state)
             }
         }
     }
 
     fun loadChat(chatId: String) {
+        Log.i(TAG, "loadChat: $chatId")
         _currentChatId.value = chatId
         viewModelScope.launch {
             if (chatId == "new") {
+                Log.d(TAG, "Loading new chat")
                 _state.value = _state.value.copy(currentChat = null)
             } else {
                 val chat = chatRepository.getChatById(chatId)
+                Log.d(TAG, "Chat loaded: id=$chatId")
                 _state.value = _state.value.copy(currentChat = chat)
             }
         }
     }
 
     fun loadLastUsedModel() {
+        Log.i(TAG, "loadLastUsedModel called")
         viewModelScope.launch {
             // Try to get last used model from preferences first
             val lastUsedPath = appPreferences.getLastUsedModelPath()
+            Log.d(TAG, "lastUsedPath from preferences: $lastUsedPath")
             val modelToLoad = if (lastUsedPath != null) {
                 modelRepository.getModelByPath(lastUsedPath)
             } else {
@@ -94,23 +104,31 @@ class ChatViewModel @Inject constructor(
     }
 
     fun ejectModel() {
+        Log.i(TAG, "ejectModel called")
         viewModelScope.launch {
             // Save current model path before ejecting
             val currentModel = modelRepository.getLoadedModel()
             if (currentModel != null) {
+                Log.d(TAG, "Saving model path before eject: ${currentModel.path}")
                 appPreferences.setLastUsedModelPath(currentModel.path)
             }
             inferenceManager.ejectModel()
             modelRepository.unloadAllModels()
+            Log.i(TAG, "ejectModel complete")
             // State collection in observeInferenceState will handle UI update
         }
     }
 
     fun sendMessage(content: String) {
-        if (content.isBlank() || !inferenceManager.isModelLoaded()) return
+        Log.i(TAG, "sendMessage called: length=${content.length}, modelLoaded=${inferenceManager.isModelLoaded()}")
+        if (content.isBlank() || !inferenceManager.isModelLoaded()) {
+            Log.w(TAG, "sendMessage FAILED: blank=${ content.isBlank()}, modelLoaded=${inferenceManager.isModelLoaded()}")
+            return
+        }
 
         viewModelScope.launch {
             val autoSave = appPreferences.isAutoSaveChats()
+            Log.d(TAG, "autoSave=$autoSave")
             val chatId = _state.value.currentChat?.id ?: run {
                 val newChat = com.lmstudio.mobile.domain.model.Chat(
                     id = java.util.UUID.randomUUID().toString(),
@@ -120,6 +138,7 @@ class ChatViewModel @Inject constructor(
                     modelId = modelRepository.getLoadedModel()?.id
                 )
                 if (autoSave) {
+                    Log.d(TAG, "Creating new chat: ${newChat.id}")
                     chatRepository.insertChat(newChat)
                 }
                 _state.value = _state.value.copy(currentChat = newChat)
@@ -132,6 +151,7 @@ class ChatViewModel @Inject constructor(
             } else {
                 emptyList()
             }
+            Log.d(TAG, "previousMessages count: ${previousMessages.size}")
 
             val userMessage = Message(
                 id = java.util.UUID.randomUUID().toString(),
@@ -141,24 +161,30 @@ class ChatViewModel @Inject constructor(
                 timestamp = System.currentTimeMillis()
             )
             
+            Log.d(TAG, "User message created: id=${userMessage.id}")
             if (autoSave) {
                 messageDao.insertMessage(userMessage.toEntity())
+                Log.d(TAG, "User message saved to database")
             }
 
             _state.value = _state.value.copy(isGenerating = true)
+            Log.i(TAG, "Starting inference generation")
 
             var assistantContent = ""
             val assistantMessageId = java.util.UUID.randomUUID().toString()
 
             // Pass all messages including the new user message
             val allMessages = previousMessages + userMessage
+            Log.d(TAG, "Total messages for inference: ${allMessages.size}")
 
             inferenceManager.generateCompletion(
                 messages = allMessages,
                 onToken = { token ->
+                    Log.v(TAG, "Received token: '${token.take(20)}'")
                     assistantContent += token
                 },
                 onComplete = {
+                    Log.i(TAG, "Inference complete, saving response (length=${assistantContent.length})")
                     viewModelScope.launch {
                         val assistantMessage = Message(
                             id = assistantMessageId,
@@ -168,11 +194,14 @@ class ChatViewModel @Inject constructor(
                             timestamp = System.currentTimeMillis()
                         )
                         if (autoSave) {
+                            Log.d(TAG, "Saving assistant message to database")
                             messageDao.insertMessage(assistantMessage.toEntity())
                             // Update chat timestamp
                             chatRepository.renameChat(chatId, _state.value.currentChat?.title ?: content.take(50))
+                            Log.d(TAG, "Chat timestamp updated")
                         }
                         _state.value = _state.value.copy(isGenerating = false)
+                        Log.i(TAG, "sendMessage COMPLETE")
                     }
                 }
             )
@@ -180,24 +209,30 @@ class ChatViewModel @Inject constructor(
     }
 
     fun renameChat(newTitle: String) {
+        Log.i(TAG, "renameChat: $newTitle")
         viewModelScope.launch {
             val chatId = _state.value.currentChat?.id ?: return@launch
             chatRepository.renameChat(chatId, newTitle)
+            Log.d(TAG, "Chat renamed: $chatId")
         }
     }
 
     fun deleteChat() {
+        Log.i(TAG, "deleteChat called")
         viewModelScope.launch {
             val chatId = _state.value.currentChat?.id ?: return@launch
             chatRepository.deleteChat(chatId)
+            Log.d(TAG, "Chat deleted: $chatId")
         }
     }
 
     private fun updateModelStatus(inferenceState: InferenceState) {
+        Log.d(TAG, "updateModelStatus: $inferenceState")
         viewModelScope.launch {
             val isLoaded = (inferenceState == InferenceState.READY || inferenceState == InferenceState.GENERATING)
             if (isLoaded) {
                 val loadedModel = modelRepository.getLoadedModel()
+                Log.i(TAG, "Model is LOADED: ${loadedModel?.name}")
                 _state.value = _state.value.copy(
                     isModelLoaded = true,
                     loadedModel = loadedModel,
@@ -211,6 +246,7 @@ class ChatViewModel @Inject constructor(
                 } else {
                     modelRepository.getLoadedModel()
                 }
+                Log.i(TAG, "Model is NOT LOADED, lastUsed=${lastUsed?.name}")
                 _state.value = _state.value.copy(
                     isModelLoaded = false,
                     loadedModel = lastUsed,
