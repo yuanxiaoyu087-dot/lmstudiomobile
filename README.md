@@ -115,10 +115,6 @@ This is an initial implementation. Key areas still requiring work:
 
 This is a comprehensive project structure. Contributions welcome!
 
-## License
-
-[Add your license here]
-
 ## Acknowledgments
 
 - llama.cpp by ggerganov
