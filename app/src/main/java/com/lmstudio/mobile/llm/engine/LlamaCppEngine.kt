@@ -200,6 +200,14 @@ class LlamaCppEngine @Inject constructor(
         return job
     }
 
+    override fun stopGeneration() {
+        Log.i(TAG, "stopGeneration called")
+        synchronized(this) {
+            currentGenerationJob?.cancel()
+            currentGenerationJob = null
+        }
+    }
+
     override suspend fun ejectModel(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Log.i(TAG, "ejectModel: START - contextPtr=$contextPtr")
@@ -242,7 +250,6 @@ class LlamaCppEngine @Inject constructor(
             try {
                 val usage = nativeGetMemoryUsage(contextPtr)
                 Log.v(TAG, "getResourceUsage: cpu=${usage[0]}, ram=${usage[1]}, vram=${usage[2]}, gpu=${usage[3]}")
-                Log.v(TAG, "getResourceUsage: cpu=${usage[0]}, ram=${usage[1]}, vram=${usage[2]}, gpu=${usage[3]}")
                 ResourceMetrics(
                     cpuUsage = usage[0],
                     ramUsage = usage[1],
@@ -256,4 +263,3 @@ class LlamaCppEngine @Inject constructor(
         }
     }
 }
-

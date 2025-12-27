@@ -19,7 +19,7 @@ interface LLMEngine {
         onToken: (String) -> Unit,
         onComplete: () -> Unit
     ): Job
+    fun stopGeneration()
     fun getModelInfo(): ModelInfo?
     fun getResourceUsage(): ResourceMetrics
 }
-

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,7 +62,9 @@ fun ChatScreen(
                             messageText = ""
                         }
                     },
-                    enabled = !state.isGenerating
+                    onStopGeneration = { viewModel.stopGeneration() },
+                    isGenerating = state.isGenerating,
+                    enabled = true // Always enabled to allow stopping
                 )
             }
         }
@@ -208,6 +211,8 @@ fun MessageInputBar(
     message: String,
     onValueChange: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onStopGeneration: () -> Unit,
+    isGenerating: Boolean,
     enabled: Boolean
 ) {
     Surface(
@@ -225,15 +230,27 @@ fun MessageInputBar(
                 value = message,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                enabled = enabled,
+                enabled = enabled && !isGenerating,
                 placeholder = { Text("Type a message...") },
                 maxLines = 5
             )
-            IconButton(
-                onClick = onSendMessage,
-                enabled = enabled && message.isNotBlank()
-            ) {
-                Icon(Icons.Default.Send, contentDescription = "Send")
+            
+            if (isGenerating) {
+                IconButton(
+                    onClick = onStopGeneration,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Outlined.Stop, contentDescription = "Stop Generation")
+                }
+            } else {
+                IconButton(
+                    onClick = onSendMessage,
+                    enabled = enabled && message.isNotBlank()
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = "Send")
+                }
             }
         }
     }

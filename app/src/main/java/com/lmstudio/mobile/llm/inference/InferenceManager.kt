@@ -61,6 +61,14 @@ class InferenceManager @Inject constructor(
         }
     }
 
+    fun stopGeneration() {
+        Log.i(TAG, "stopGeneration called")
+        llmEngine.stopGeneration()
+        if (_state.value == InferenceState.GENERATING) {
+            _state.value = InferenceState.READY
+        }
+    }
+
     fun generateCompletion(
         messages: List<Message>,
         onToken: (String) -> Unit,
@@ -353,4 +361,3 @@ class InferenceManager @Inject constructor(
         return prompt.toString()
     }
 }
-

@@ -252,4 +252,29 @@ The project is **fully functional** with all major features implemented:
 #### Crash Fix
 - Fixed a critical crash where `nativeGenerateToken` could be invoked after the native context was freed.
 - The application now guarantees strict ordering between job cancellation and native resource cleanup.
+
+### Version 1.0.6 – Smart Context & Interactive Control
+
+#### Interactive Generation Control
+- **Stop Button:** Added a "Stop" button to the Chat screen, allowing users to manually interrupt model responses at any time.  
+- **stopGeneration():** Implemented across the native engine, inference manager, and UI layers for immediate response termination.  
+- **Dynamic Input Bar:** Updated the message input bar to toggle between "Send" and "Stop" icons based on the current generation state.  
+
+#### Advanced Context Management (Clean Prompting)
+- **User-Assistant Pair Logic:** The engine now scans the current session and only includes messages that received a valid response.  
+- **Automatic Cleanup:** Messages that were interrupted, pre-empted, or resulted in errors are now automatically excluded from the context of the next prompt. This prevents "prompt accumulation" and ensures the model doesn't get confused by unanswered questions.  
+
+#### Session-Based Filtering
+- **sessionStartTime:** Introduced to separate "Cold History" from the "Active Conversation."  
+- **Old Messages Handling:** Old messages from previous app launches or other sessions remain visible in the UI for reference but are not sent to the LLM, preventing unwanted re-processing of old data.  
+
+#### Navigation & Lifecycle Fixes
+- **Context Preservation:** Fixed a critical bug where navigating from a "new" chat to a saved chat ID (after the first message) would reset the session timer and cause the second message to lose context.  
+- **Timestamp Buffer:** Added a 5-second buffer to the context filter to handle minor system clock discrepancies and database write latencies.  
+- **Automatic Termination:** Implemented automatic generation termination when the Chat ViewModel is cleared (app closure or navigation), ensuring native resources are never left in a "hanging" state.  
+
+#### UX & Stability
+- **State Guards:** Hardened the sendMessage logic with strict state guards to prevent parallel message processing and accidental "double-sends."  
+- **UI Responsiveness:** Improved UI responsiveness by disabling message input while the model is actively thinking/generating.
+
 ```   

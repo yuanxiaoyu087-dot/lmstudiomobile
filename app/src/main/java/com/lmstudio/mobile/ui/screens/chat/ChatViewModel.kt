@@ -43,6 +43,9 @@ class ChatViewModel @Inject constructor(
     // Локальное состояние для streaming сообщений (пока не сохранены в БД)
     private val _streamingMessages = MutableStateFlow<Map<String, Message>>(emptyMap())
     
+    // Время начала текущей сессии для фильтрации контекста (чтобы старые сообщения не обрабатывались повторно)
+    private var sessionStartTime: Long = System.currentTimeMillis()
+    
     // Объединяем сообщения из БД с локальными streaming сообщениями
     val messages = combine(
         _currentChatId.flatMapLatest { chatId ->
@@ -91,30 +94,37 @@ class ChatViewModel @Inject constructor(
     }
 
     fun loadChat(chatId: String) {
-        Log.i(TAG, "loadChat: $chatId")
-        val previousChatId = _currentChatId.value
-        _currentChatId.value = chatId
+        Log.i(TAG, "loadChat: $chatId, current=${_currentChatId.value}")
         
-        // Очищаем streaming сообщения только для предыдущего чата (если переключаемся между чатами)
-        if (previousChatId != null && previousChatId != chatId) {
-            _streamingMessages.value = _streamingMessages.value.filter { it.value.chatId == chatId }
-            Log.d(TAG, "Cleared streaming messages for previous chat: $previousChatId")
-        }
-        
-        // Если это новый чат, очищаем все streaming сообщения
-        if (chatId == "new") {
-            _streamingMessages.value = emptyMap()
-        }
-        
-        viewModelScope.launch {
-            if (chatId == "new") {
-                Log.d(TAG, "Loading new chat")
-                _state.value = _state.value.copy(currentChat = null)
-            } else {
-                val chat = chatRepository.getChatById(chatId)
-                Log.d(TAG, "Chat loaded: id=$chatId")
-                _state.value = _state.value.copy(currentChat = chat)
+        if (_currentChatId.value != chatId) {
+            Log.d(TAG, "Chat ID changed, starting new session")
+            sessionStartTime = System.currentTimeMillis()
+            
+            val previousChatId = _currentChatId.value
+            _currentChatId.value = chatId
+            
+            // Очищаем streaming сообщения только для предыдущего чата
+            if (previousChatId != null) {
+                _streamingMessages.value = _streamingMessages.value.filter { it.value.chatId == chatId }
             }
+            
+            // Если это новый чат, очищаем все streaming сообщения
+            if (chatId == "new") {
+                _streamingMessages.value = emptyMap()
+            }
+            
+            viewModelScope.launch {
+                if (chatId == "new") {
+                    Log.d(TAG, "Loading new chat")
+                    _state.value = _state.value.copy(currentChat = null)
+                } else {
+                    val chat = chatRepository.getChatById(chatId)
+                    Log.d(TAG, "Chat loaded: id=$chatId")
+                    _state.value = _state.value.copy(currentChat = chat)
+                }
+            }
+        } else {
+            Log.d(TAG, "loadChat: Chat already loaded, skipping session reset")
         }
     }
 
@@ -153,21 +163,36 @@ class ChatViewModel @Inject constructor(
             inferenceManager.ejectModel()
             modelRepository.unloadAllModels()
             Log.i(TAG, "ejectModel complete")
-            // State collection in observeInferenceState will handle UI update
         }
+    }
+
+    fun stopGeneration() {
+        Log.i(TAG, "stopGeneration called")
+        inferenceManager.stopGeneration()
+        _state.value = _state.value.copy(isGenerating = false)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Останавливаем генерацию при закрытии ViewModel (например, при выходе из приложения)
+        inferenceManager.stopGeneration()
     }
 
     fun sendMessage(content: String) {
         Log.i(TAG, "sendMessage called: length=${content.length}, modelLoaded=${inferenceManager.isModelLoaded()}")
-        if (content.isBlank() || !inferenceManager.isModelLoaded()) {
-            Log.w(TAG, "sendMessage FAILED: blank=${ content.isBlank()}, modelLoaded=${inferenceManager.isModelLoaded()}")
+        
+        // Проверяем, не идет ли уже генерация, чтобы избежать параллельных запросов
+        if (content.isBlank() || !inferenceManager.isModelLoaded() || _state.value.isGenerating) {
+            Log.w(TAG, "sendMessage BLOCKED: blank=${content.isBlank()}, loaded=${inferenceManager.isModelLoaded()}, generating=${_state.value.isGenerating}")
             return
         }
 
         viewModelScope.launch {
             val autoSave = appPreferences.isAutoSaveChats()
-            Log.d(TAG, "autoSave=$autoSave")
-            val chatId = _state.value.currentChat?.id ?: run {
+            var currentChatId = _currentChatId.value
+            
+            // Если это новый чат, создаем его
+            if (currentChatId == null || currentChatId == "new") {
                 val newChat = com.lmstudio.mobile.domain.model.Chat(
                     id = java.util.UUID.randomUUID().toString(),
                     title = content.take(50),
@@ -180,19 +205,49 @@ class ChatViewModel @Inject constructor(
                     chatRepository.insertChat(newChat)
                 }
                 _state.value = _state.value.copy(currentChat = newChat)
-                // ВАЖНО: Обновляем _currentChatId чтобы messages flow начал работать
                 _currentChatId.value = newChat.id
-                Log.d(TAG, "Updated _currentChatId to: ${newChat.id}")
-                newChat.id
+                currentChatId = newChat.id
+                Log.d(TAG, "New chat created, ID: $currentChatId")
             }
 
-            // Load all previous messages for context
-            val previousMessages = if (chatId != "new") {
-                messageDao.getMessagesByChat(chatId).first().map { it.toDomain() }
-            } else {
-                emptyList()
+            val chatId = currentChatId ?: return@launch
+
+            // Фильтруем сообщения ТЕКУЩЕЙ сессии для контекста.
+            // Включаем только сообщения с ответами, чтобы избежать накопления "битых" промптов.
+            val bufferTime = 5000L 
+            val allSessionMessages = messageDao.getMessagesByChat(chatId).first()
+                .map { it.toDomain() }
+                .filter { it.timestamp >= (sessionStartTime - bufferTime) }
+                .sortedBy { it.timestamp }
+
+            val contextMessages = mutableListOf<Message>()
+            var i = 0
+            while (i < allSessionMessages.size) {
+                val msg = allSessionMessages[i]
+                if (msg.role == MessageRole.USER) {
+                    // Ищем соответствующий ответ ассистента, идущий следом
+                    val nextMsg = allSessionMessages.getOrNull(i + 1)
+                    if (nextMsg != null && nextMsg.role == MessageRole.ASSISTANT && nextMsg.content.isNotBlank()) {
+                        contextMessages.add(msg)
+                        contextMessages.add(nextMsg)
+                        i += 2
+                    } else {
+                        // Если на сообщение не было ответа (прервано или ошибка), 
+                        // пропускаем его, чтобы оно не "накапливалось" в новом промпте.
+                        Log.d(TAG, "Skipping unanswered message: ${msg.content.take(20)}")
+                        i++
+                    }
+                } else if (msg.role == MessageRole.SYSTEM) {
+                    contextMessages.add(msg)
+                    i++
+                } else {
+                    // Одиночные ответы ассистента без контекста пользователя (быть не должно, но сохраняем структуру)
+                    contextMessages.add(msg)
+                    i++
+                }
             }
-            Log.d(TAG, "previousMessages count: ${previousMessages.size}")
+            
+            Log.d(TAG, "Clean context messages: ${contextMessages.size} (from total ${allSessionMessages.size})")
 
             val userMessage = Message(
                 id = java.util.UUID.randomUUID().toString(),
@@ -202,26 +257,20 @@ class ChatViewModel @Inject constructor(
                 timestamp = System.currentTimeMillis()
             )
             
-            Log.d(TAG, "User message created: id=${userMessage.id}")
-            
-            // Добавляем пользовательское сообщение в streaming сразу для отображения
+            // Добавляем сообщение пользователя в UI (через streaming для мгновенного отображения)
             _streamingMessages.value = _streamingMessages.value + (userMessage.id to userMessage)
             
             if (autoSave) {
                 messageDao.insertMessage(userMessage.toEntity())
-                Log.d(TAG, "User message saved to database")
-                // Оставляем в streaming - логика объединения правильно обработает дубликаты
-                // (streaming версия имеет приоритет, а после обновления БД оно автоматически заменится)
             }
 
             _state.value = _state.value.copy(isGenerating = true)
-            Log.i(TAG, "Starting inference generation")
-
+            
             var assistantContent = ""
             val assistantMessageId = java.util.UUID.randomUUID().toString()
             val assistantTimestamp = System.currentTimeMillis()
 
-            // Создаем пустое сообщение ассистента для streaming
+            // Заглушка для ответа ассистента
             val assistantMessage = Message(
                 id = assistantMessageId,
                 chatId = chatId,
@@ -231,16 +280,13 @@ class ChatViewModel @Inject constructor(
             )
             _streamingMessages.value = _streamingMessages.value + (assistantMessageId to assistantMessage)
 
-            // Pass all messages including the new user message
-            val allMessages = previousMessages + userMessage
-            Log.d(TAG, "Total messages for inference: ${allMessages.size}")
+            val allMessagesForPrompt = contextMessages + userMessage
+            Log.d(TAG, "Starting generation with prompt from ${allMessagesForPrompt.size} messages")
 
             inferenceManager.generateCompletion(
-                messages = allMessages,
+                messages = allMessagesForPrompt,
                 onToken = { token ->
-                    Log.v(TAG, "Received token: '${token.take(20)}'")
                     assistantContent += token
-                    // Обновляем streaming сообщение в реальном времени
                     _streamingMessages.value = _streamingMessages.value + (assistantMessageId to Message(
                         id = assistantMessageId,
                         chatId = chatId,
@@ -250,31 +296,21 @@ class ChatViewModel @Inject constructor(
                     ))
                 },
                 onComplete = {
-                    Log.i(TAG, "Inference complete, saving response (length=${assistantContent.length})")
+                    Log.i(TAG, "Generation completed, tokens received: ${assistantContent.length}")
                     viewModelScope.launch {
-                        val finalAssistantMessage = Message(
-                            id = assistantMessageId,
-                            chatId = chatId,
-                            role = MessageRole.ASSISTANT,
-                            content = assistantContent,
-                            timestamp = assistantTimestamp
-                        )
-                        
-                        if (autoSave) {
-                            Log.d(TAG, "Saving assistant message to database")
+                        if (autoSave && assistantContent.isNotBlank()) {
+                            val finalAssistantMessage = Message(
+                                id = assistantMessageId,
+                                chatId = chatId,
+                                role = MessageRole.ASSISTANT,
+                                content = assistantContent,
+                                timestamp = assistantTimestamp
+                            )
                             messageDao.insertMessage(finalAssistantMessage.toEntity())
-                            // Update chat timestamp
                             chatRepository.renameChat(chatId, _state.value.currentChat?.title ?: content.take(50))
-                            Log.d(TAG, "Chat timestamp updated")
-                            // Удаляем из streaming после сохранения
                             _streamingMessages.value = _streamingMessages.value - assistantMessageId
-                        } else {
-                            // Если не сохраняем, оставляем в streaming
-                            _streamingMessages.value = _streamingMessages.value + (assistantMessageId to finalAssistantMessage)
                         }
-                        
                         _state.value = _state.value.copy(isGenerating = false)
-                        Log.i(TAG, "sendMessage COMPLETE")
                     }
                 }
             )
@@ -282,48 +318,42 @@ class ChatViewModel @Inject constructor(
     }
 
     fun renameChat(newTitle: String) {
-        Log.i(TAG, "renameChat: $newTitle")
         viewModelScope.launch {
             val chatId = _state.value.currentChat?.id ?: return@launch
             chatRepository.renameChat(chatId, newTitle)
-            Log.d(TAG, "Chat renamed: $chatId")
         }
     }
 
     fun deleteChat() {
-        Log.i(TAG, "deleteChat called")
         viewModelScope.launch {
             val chatId = _state.value.currentChat?.id ?: return@launch
             chatRepository.deleteChat(chatId)
-            Log.d(TAG, "Chat deleted: $chatId")
         }
     }
 
     private fun updateModelStatus(inferenceState: InferenceState) {
-        Log.d(TAG, "updateModelStatus: $inferenceState")
         viewModelScope.launch {
             val isLoaded = (inferenceState == InferenceState.READY || inferenceState == InferenceState.GENERATING)
             if (isLoaded) {
                 val loadedModel = modelRepository.getLoadedModel()
-                Log.i(TAG, "Model is LOADED: ${loadedModel?.name}")
                 _state.value = _state.value.copy(
                     isModelLoaded = true,
                     loadedModel = loadedModel,
-                    isLoading = false
+                    isLoading = false,
+                    isGenerating = (inferenceState == InferenceState.GENERATING)
                 )
             } else {
-                // Try to get last used model from preferences
                 val lastUsedPath = appPreferences.getLastUsedModelPath()
                 val lastUsed = if (lastUsedPath != null) {
                     modelRepository.getModelByPath(lastUsedPath)
                 } else {
                     modelRepository.getLoadedModel()
                 }
-                Log.i(TAG, "Model is NOT LOADED, lastUsed=${lastUsed?.name}")
                 _state.value = _state.value.copy(
                     isModelLoaded = false,
                     loadedModel = lastUsed,
-                    isLoading = (inferenceState == InferenceState.LOADING)
+                    isLoading = (inferenceState == InferenceState.LOADING),
+                    isGenerating = false
                 )
             }
         }
