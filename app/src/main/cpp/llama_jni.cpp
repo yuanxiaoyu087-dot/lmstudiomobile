@@ -179,7 +179,10 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
 JNIEXPORT void JNICALL
 Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeUnloadModel(JNIEnv*, jobject, jlong contextPtr) {
     if (contextPtr) {
-        delete reinterpret_cast<LlamaContext*>(contextPtr);
+        // Note: The Kotlin side should cancel any ongoing operations before calling this.
+        // We don't lock here because we can't safely delete an object while holding its own mutex.
+        LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
+        delete llama_ctx;
         LOGI("Native model deleted");
     }
 }

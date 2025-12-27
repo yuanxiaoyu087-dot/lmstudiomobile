@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,14 +40,38 @@ class ChatViewModel @Inject constructor(
 
     private val _currentChatId = MutableStateFlow<String?>(null)
     
-    val messages = _currentChatId.flatMapLatest { chatId ->
-        if (chatId != null && chatId != "new") {
-            messageDao.getMessagesByChat(chatId).map { messages ->
-                messages.map { it.toDomain() }
+    // Локальное состояние для streaming сообщений (пока не сохранены в БД)
+    private val _streamingMessages = MutableStateFlow<Map<String, Message>>(emptyMap())
+    
+    // Объединяем сообщения из БД с локальными streaming сообщениями
+    val messages = combine(
+        _currentChatId.flatMapLatest { chatId ->
+            if (chatId != null && chatId != "new") {
+                messageDao.getMessagesByChat(chatId).map { messages ->
+                    messages.map { it.toDomain() }
+                }
+            } else {
+                // Для нового чата возвращаем пустой список из БД, но streaming сообщения будут добавлены
+                kotlinx.coroutines.flow.flowOf(emptyList<Message>())
             }
+        },
+        _streamingMessages,
+        _currentChatId
+    ) { dbMessages, streamingMessages, chatId ->
+        // Фильтруем streaming сообщения по текущему chatId
+        val relevantStreamingMessages = if (chatId != null) {
+            streamingMessages.values.filter { it.chatId == chatId }
         } else {
-            kotlinx.coroutines.flow.flowOf(emptyList<Message>())
+            emptyList()
         }
+        
+        val streamingIds = relevantStreamingMessages.map { it.id }.toSet()
+        
+        // Фильтруем сообщения из БД, исключая те, что есть в streaming (streaming версия более актуальна)
+        val dbMessagesFiltered = dbMessages.filter { it.id !in streamingIds }
+        
+        // Объединяем и сортируем по timestamp
+        (dbMessagesFiltered + relevantStreamingMessages).sortedBy { it.timestamp }
     }
 
     init {
@@ -67,7 +92,20 @@ class ChatViewModel @Inject constructor(
 
     fun loadChat(chatId: String) {
         Log.i(TAG, "loadChat: $chatId")
+        val previousChatId = _currentChatId.value
         _currentChatId.value = chatId
+        
+        // Очищаем streaming сообщения только для предыдущего чата (если переключаемся между чатами)
+        if (previousChatId != null && previousChatId != chatId) {
+            _streamingMessages.value = _streamingMessages.value.filter { it.value.chatId == chatId }
+            Log.d(TAG, "Cleared streaming messages for previous chat: $previousChatId")
+        }
+        
+        // Если это новый чат, очищаем все streaming сообщения
+        if (chatId == "new") {
+            _streamingMessages.value = emptyMap()
+        }
+        
         viewModelScope.launch {
             if (chatId == "new") {
                 Log.d(TAG, "Loading new chat")
@@ -142,6 +180,9 @@ class ChatViewModel @Inject constructor(
                     chatRepository.insertChat(newChat)
                 }
                 _state.value = _state.value.copy(currentChat = newChat)
+                // ВАЖНО: Обновляем _currentChatId чтобы messages flow начал работать
+                _currentChatId.value = newChat.id
+                Log.d(TAG, "Updated _currentChatId to: ${newChat.id}")
                 newChat.id
             }
 
@@ -162,9 +203,15 @@ class ChatViewModel @Inject constructor(
             )
             
             Log.d(TAG, "User message created: id=${userMessage.id}")
+            
+            // Добавляем пользовательское сообщение в streaming сразу для отображения
+            _streamingMessages.value = _streamingMessages.value + (userMessage.id to userMessage)
+            
             if (autoSave) {
                 messageDao.insertMessage(userMessage.toEntity())
                 Log.d(TAG, "User message saved to database")
+                // Оставляем в streaming - логика объединения правильно обработает дубликаты
+                // (streaming версия имеет приоритет, а после обновления БД оно автоматически заменится)
             }
 
             _state.value = _state.value.copy(isGenerating = true)
@@ -172,6 +219,17 @@ class ChatViewModel @Inject constructor(
 
             var assistantContent = ""
             val assistantMessageId = java.util.UUID.randomUUID().toString()
+            val assistantTimestamp = System.currentTimeMillis()
+
+            // Создаем пустое сообщение ассистента для streaming
+            val assistantMessage = Message(
+                id = assistantMessageId,
+                chatId = chatId,
+                role = MessageRole.ASSISTANT,
+                content = "",
+                timestamp = assistantTimestamp
+            )
+            _streamingMessages.value = _streamingMessages.value + (assistantMessageId to assistantMessage)
 
             // Pass all messages including the new user message
             val allMessages = previousMessages + userMessage
@@ -182,24 +240,39 @@ class ChatViewModel @Inject constructor(
                 onToken = { token ->
                     Log.v(TAG, "Received token: '${token.take(20)}'")
                     assistantContent += token
+                    // Обновляем streaming сообщение в реальном времени
+                    _streamingMessages.value = _streamingMessages.value + (assistantMessageId to Message(
+                        id = assistantMessageId,
+                        chatId = chatId,
+                        role = MessageRole.ASSISTANT,
+                        content = assistantContent,
+                        timestamp = assistantTimestamp
+                    ))
                 },
                 onComplete = {
                     Log.i(TAG, "Inference complete, saving response (length=${assistantContent.length})")
                     viewModelScope.launch {
-                        val assistantMessage = Message(
+                        val finalAssistantMessage = Message(
                             id = assistantMessageId,
                             chatId = chatId,
                             role = MessageRole.ASSISTANT,
                             content = assistantContent,
-                            timestamp = System.currentTimeMillis()
+                            timestamp = assistantTimestamp
                         )
+                        
                         if (autoSave) {
                             Log.d(TAG, "Saving assistant message to database")
-                            messageDao.insertMessage(assistantMessage.toEntity())
+                            messageDao.insertMessage(finalAssistantMessage.toEntity())
                             // Update chat timestamp
                             chatRepository.renameChat(chatId, _state.value.currentChat?.title ?: content.take(50))
                             Log.d(TAG, "Chat timestamp updated")
+                            // Удаляем из streaming после сохранения
+                            _streamingMessages.value = _streamingMessages.value - assistantMessageId
+                        } else {
+                            // Если не сохраняем, оставляем в streaming
+                            _streamingMessages.value = _streamingMessages.value + (assistantMessageId to finalAssistantMessage)
                         }
+                        
                         _state.value = _state.value.copy(isGenerating = false)
                         Log.i(TAG, "sendMessage COMPLETE")
                     }

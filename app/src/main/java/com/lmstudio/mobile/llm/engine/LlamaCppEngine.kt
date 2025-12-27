@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,8 +20,11 @@ class LlamaCppEngine @Inject constructor(
     private val accelerationManager: AccelerationManager
 ) : LLMEngine {
 
+    @Volatile
     private var contextPtr: Long = 0L
     private var currentModelInfo: ModelInfo? = null
+    @Volatile
+    private var currentGenerationJob: Job? = null
 
     companion object {
         init {
@@ -92,67 +96,132 @@ class LlamaCppEngine @Inject constructor(
         prompt: String,
         onToken: (String) -> Unit,
         onComplete: () -> Unit
-    ): Job = CoroutineScope(Dispatchers.Default).launch {
-        try {
-            if (contextPtr == 0L) {
-                Log.e(TAG, "generateResponse: FAILED - Model not loaded (contextPtr=0)")
-                return@launch
+    ): Job {
+        val scope = CoroutineScope(Dispatchers.Default)
+        val job = scope.launch {
+            // Get current job using coroutineContext - coroutineContext is a built-in property in coroutine scope
+            val currentJob = coroutineContext[Job] ?: return@launch
+            
+            synchronized(this@LlamaCppEngine) {
+                currentGenerationJob?.cancel()
+                currentGenerationJob = currentJob
             }
-
-            Log.i(TAG, "generateResponse: START - prompt length=${prompt.length}")
-            // Reset context for new generation
-            nativeResetContext(contextPtr)
-            Log.d(TAG, "generateResponse: context reset")
             
-            // Limit token generation to prevent crashes
-            val maxTokens = 500
-            var tokenCount = 0
-            
-            // First call with prompt to initialize
-            Log.d(TAG, "generateResponse: generating first token with prompt")
-            var token = nativeGenerateToken(contextPtr, prompt)
-            var hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
-            
-            while (hasMoreTokens) {
-                if (token.isNotEmpty()) {
-                    Log.v(TAG, "generateResponse: token[$tokenCount]='${token.take(20)}'")
-                    withContext(Dispatchers.Main) {
-                        onToken(token)
+            try {
+                // Capture contextPtr at start - check it throughout
+                val currentContextPtr = contextPtr
+                if (currentContextPtr == 0L) {
+                    Log.e(TAG, "generateResponse: FAILED - Model not loaded (contextPtr=0)")
+                    synchronized(this@LlamaCppEngine) {
+                        if (currentGenerationJob == currentJob) currentGenerationJob = null
                     }
-                    tokenCount++
-                } else {
-                    Log.d(TAG, "generateResponse: empty token at count=$tokenCount")
+                    return@launch
                 }
-                // Continue generation with empty string to get next tokens
-                token = nativeGenerateToken(contextPtr, "")
-                hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
-                
-                if (tokenCount >= maxTokens) {
-                    Log.w(TAG, "generateResponse: reached maxTokens limit ($maxTokens)")
-                    break
-                }
-            }
 
-            Log.i(TAG, "generateResponse: COMPLETE - totalTokens=$tokenCount")
-            withContext(Dispatchers.Main) {
-                onComplete()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "generateResponse: EXCEPTION - ${e.message}", e)
-            withContext(Dispatchers.Main) {
-                onComplete()
+                Log.i(TAG, "generateResponse: START - prompt length=${prompt.length}")
+                // Reset context for new generation
+                if (contextPtr != currentContextPtr || !isActive) {
+                    Log.w(TAG, "generateResponse: cancelled before reset")
+                    return@launch
+                }
+                nativeResetContext(currentContextPtr)
+                Log.d(TAG, "generateResponse: context reset")
+                
+                // Limit token generation to prevent crashes
+                val maxTokens = 500
+                var tokenCount = 0
+                
+                // First call with prompt to initialize
+                Log.d(TAG, "generateResponse: generating first token with prompt")
+                if (contextPtr != currentContextPtr || !isActive) {
+                    Log.w(TAG, "generateResponse: cancelled before first token")
+                    return@launch
+                }
+                var token = nativeGenerateToken(currentContextPtr, prompt)
+                var hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
+                
+                while (hasMoreTokens && isActive) {
+                    // Check if context is still valid before each iteration
+                    if (contextPtr != currentContextPtr) {
+                        Log.w(TAG, "generateResponse: model ejected during generation, stopping")
+                        break
+                    }
+                    
+                    if (token.isNotEmpty()) {
+                        Log.v(TAG, "generateResponse: token[$tokenCount]='${token.take(20)}'")
+                        withContext(Dispatchers.Main) {
+                            if (isActive) {
+                                onToken(token)
+                            }
+                        }
+                        tokenCount++
+                    } else {
+                        Log.d(TAG, "generateResponse: empty token at count=$tokenCount")
+                    }
+                    
+                    // Check again before next native call
+                    if (contextPtr != currentContextPtr || !isActive) {
+                        Log.w(TAG, "generateResponse: cancelled before next token")
+                        break
+                    }
+                    
+                    // Continue generation with empty string to get next tokens
+                    token = nativeGenerateToken(currentContextPtr, "")
+                    hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
+                    
+                    if (tokenCount >= maxTokens) {
+                        Log.w(TAG, "generateResponse: reached maxTokens limit ($maxTokens)")
+                        break
+                    }
+                }
+
+                Log.i(TAG, "generateResponse: COMPLETE - totalTokens=$tokenCount")
+                if (isActive) {
+                    withContext(Dispatchers.Main) {
+                        onComplete()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "generateResponse: EXCEPTION - ${e.message}", e)
+                if (isActive) {
+                    withContext(Dispatchers.Main) {
+                        onComplete()
+                    }
+                }
+            } finally {
+                val finalJob = coroutineContext[Job]
+                synchronized(this@LlamaCppEngine) {
+                    if (finalJob != null && currentGenerationJob == finalJob) {
+                        currentGenerationJob = null
+                    }
+                }
             }
         }
+        return job
     }
 
     override suspend fun ejectModel(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Log.i(TAG, "ejectModel: START - contextPtr=$contextPtr")
-            if (contextPtr != 0L) {
-                nativeUnloadModel(contextPtr)
-                Log.d(TAG, "ejectModel: native unload completed")
+            
+            // Cancel any ongoing generation first
+            synchronized(this@LlamaCppEngine) {
+                currentGenerationJob?.cancel()
+                currentGenerationJob = null
+            }
+            
+            // Wait a bit for cancellation to propagate
+            kotlinx.coroutines.delay(50)
+            
+            val ptrToUnload = contextPtr
+            if (ptrToUnload != 0L) {
+                // Set contextPtr to 0 before unloading to prevent new calls
                 contextPtr = 0L
                 currentModelInfo = null
+                
+                // Now safe to unload native model
+                nativeUnloadModel(ptrToUnload)
+                Log.d(TAG, "ejectModel: native unload completed")
             }
             Log.i(TAG, "ejectModel: SUCCESS")
             Result.success(Unit)

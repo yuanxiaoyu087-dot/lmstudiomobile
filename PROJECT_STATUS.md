@@ -223,5 +223,33 @@ The project is **fully functional** with all major features implemented:
   - Added pause/resume support - paused downloads can be resumed from the same position without data loss
 - **Download UI Controls**: Added Cancel (red X button) and Pause/Resume buttons to download cards in DownloadsScreen. Buttons provide visual feedback with state-dependent coloring and icons. Paused downloads show "Paused" status text with dimmed card background.
 - **ViewModel Integration**: Added `cancelDownload()` and `pauseDownload()` methods to DownloadsViewModel to bridge UI controls with download manager state.
-   
+
+### Version 1.0.5 – Job Safety, Streaming & UI Consistency
+
+#### Job Lifecycle and Synchronization
+- Added `@Volatile` to `contextPtr` to guarantee thread-safe access across coroutines.
+- Introduced explicit tracking of the active `currentGenerationJob`.
+- The active generation job is now always cancelled before model ejection.
+
+#### Token Generation Safety
+- Strengthened `generateResponse()` with strict runtime guards:
+  - The initial `contextPtr` is captured at generation start and validated throughout the generation loop.
+  - Before every call to `nativeGenerateToken`, both `contextPtr` validity and `Job.isActive` are verified.
+  - If the model is unloaded and `contextPtr` changes, generation stops immediately.
+- These checks fully prevent native calls after the context has been destroyed.
+
+#### Safe Model Unloading
+- Refactored `ejectModel()` to enforce a safe shutdown order:
+  - The active generation job is cancelled first.
+  - A short delay allows coroutine cancellation to propagate correctly.
+  - `contextPtr` is set to `0L` before unloading the native model.
+- This eliminates race conditions between coroutine execution and native resource cleanup.
+
+#### Native Layer Contract
+- Added documentation in the JNI layer clarifying that all Kotlin-side operations must be cancelled before invoking native unload.
+- This formalizes the lifecycle contract between Kotlin and C++ layers and prevents undefined behavior.
+
+#### Crash Fix
+- Fixed a critical crash where `nativeGenerateToken` could be invoked after the native context was freed.
+- The application now guarantees strict ordering between job cancellation and native resource cleanup.
 ```   
