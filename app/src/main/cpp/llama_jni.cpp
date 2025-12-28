@@ -127,6 +127,11 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
         if (decode_result != 0) {
             LOGE("Decode failed with code: %d", decode_result);
             llama_batch_free(batch);
+            // Clear memory (KV cache) on failure to enable recovery for next request
+            llama_memory_clear(llama_get_memory(llama_ctx->ctx), true);
+            if (llama_ctx->sampler) {
+                llama_sampler_reset(llama_ctx->sampler);
+            }
             llama_ctx->tokens_list.clear();
             llama_ctx->n_past = 0;
             env->ReleaseStringUTFChars(prompt, prompt_str);
@@ -167,6 +172,13 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
     if (decode_result != 0) {
         LOGE("Decode failed for generated token with code: %d", decode_result);
         llama_batch_free(batch);
+        // Clear memory (KV cache) on failure to enable recovery for next request
+        llama_memory_clear(llama_get_memory(llama_ctx->ctx), true);
+        if (llama_ctx->sampler) {
+            llama_sampler_reset(llama_ctx->sampler);
+        }
+        llama_ctx->tokens_list.clear();
+        llama_ctx->n_past = 0;
         return env->NewStringUTF("");
     }
     
@@ -192,8 +204,21 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeResetContext(JNIEnv*, j
     LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
     if (!llama_ctx) return;
     std::lock_guard<std::mutex> lock(llama_ctx->mutex);
+    
+    // Clear the memory (KV cache) to reset model state completely
+    // This is critical after interrupted generation to prevent decode failures
+    if (llama_ctx->ctx) {
+        llama_memory_clear(llama_get_memory(llama_ctx->ctx), true);
+    }
+    
+    // Reset sampler state to clear any accumulated state from previous generation
+    if (llama_ctx->sampler) {
+        llama_sampler_reset(llama_ctx->sampler);
+    }
+    
     llama_ctx->n_past = 0;
     llama_ctx->tokens_list.clear();
+    LOGI("Context reset: KV cache cleared, sampler reset, n_past=0");
 }
 
 JNIEXPORT jfloatArray JNICALL

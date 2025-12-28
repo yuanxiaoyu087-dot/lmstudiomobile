@@ -123,9 +123,11 @@ class LocalApiServer(
         val completionChannel = Channel<Unit>()
         
         inferenceManager.generateCompletion(
+            chatId = "",
+            assistantMessageId = "",
             messages = domainMessages,
             onToken = { token -> assistantContent += token },
-            onComplete = { completionChannel.trySend(Unit) }
+            onComplete = { _ -> completionChannel.trySend(Unit) }
         )
 
         runBlocking { completionChannel.receive() }
@@ -158,6 +160,8 @@ class LocalApiServer(
         Thread {
             try {
                 inferenceManager.generateCompletion(
+                    chatId = "",
+                    assistantMessageId = "",
                     messages = messages,
                     onToken = { token ->
                         val chunk = ChatCompletionResponse(
@@ -176,7 +180,7 @@ class LocalApiServer(
                         pipedOutput.write("data: ${json.encodeToString(chunk)}\n\n".toByteArray())
                         pipedOutput.flush()
                     },
-                    onComplete = {
+                    onComplete = { _ ->
                         val finalChunk = ChatCompletionResponse(
                             id = requestId,
                             choices = listOf(

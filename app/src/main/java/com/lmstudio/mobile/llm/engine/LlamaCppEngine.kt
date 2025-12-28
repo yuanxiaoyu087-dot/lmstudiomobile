@@ -4,14 +4,12 @@ import android.util.Log
 import com.lmstudio.mobile.llm.acceleration.AccelerationManager
 import com.lmstudio.mobile.llm.inference.InferenceConfig
 import com.lmstudio.mobile.llm.monitoring.ResourceMetrics
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.*
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 private const val TAG = "LlamaCppEngine"
 
@@ -25,6 +23,8 @@ class LlamaCppEngine @Inject constructor(
     private var currentModelInfo: ModelInfo? = null
     @Volatile
     private var currentGenerationJob: Job? = null
+    
+    private val stateLock = ReentrantReadWriteLock()
 
     companion object {
         init {
@@ -59,36 +59,41 @@ class LlamaCppEngine @Inject constructor(
         modelPath: String,
         config: InferenceConfig
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Log.i(TAG, "loadModel: path=$modelPath, threads=${config.nThreads}, gpuLayers=${config.nGpuLayers}, contextSize=${config.contextSize}")
-            val useVulkan = accelerationManager.isVulkanAvailable()
-            Log.d(TAG, "loadModel: vulkanAvailable=$useVulkan")
-            
-            contextPtr = nativeLoadModel(
-                modelPath = modelPath,
-                nThreads = config.nThreads,
-                nGpuLayers = config.nGpuLayers,
-                contextSize = config.contextSize,
-                useVulkan = useVulkan
-            )
-            Log.d(TAG, "loadModel: nativeLoadModel returned contextPtr=$contextPtr")
-            
-            if (contextPtr == 0L) {
-                Log.e(TAG, "loadModel: FAILED - contextPtr is 0L (model not loaded)")
-                Result.failure(Exception("Failed to load model"))
-            } else {
-                // Extract model info from path or config
-                currentModelInfo = object : ModelInfo {
-                    override val name: String = modelPath.substringAfterLast("/")
-                    override val parameters: String? = null
-                    override val contextLength: Int = config.contextSize
+        stateLock.write {
+            try {
+                if (contextPtr != 0L) {
+                    Log.i(TAG, "loadModel: unloading existing model first")
+                    nativeUnloadModel(contextPtr)
+                    contextPtr = 0L
                 }
-                Log.i(TAG, "loadModel: SUCCESS - model=${currentModelInfo?.name}, contextPtr=$contextPtr")
-                Result.success(Unit)
+
+                Log.i(TAG, "loadModel: path=$modelPath, threads=${config.nThreads}, gpuLayers=${config.nGpuLayers}, contextSize=${config.contextSize}")
+                val useVulkan = accelerationManager.isVulkanAvailable()
+                
+                contextPtr = nativeLoadModel(
+                    modelPath = modelPath,
+                    nThreads = config.nThreads,
+                    nGpuLayers = config.nGpuLayers,
+                    contextSize = config.contextSize,
+                    useVulkan = useVulkan
+                )
+                
+                if (contextPtr == 0L) {
+                    Log.e(TAG, "loadModel: FAILED")
+                    Result.failure(Exception("Failed to load model"))
+                } else {
+                    currentModelInfo = object : ModelInfo {
+                        override val name: String = modelPath.substringAfterLast("/")
+                        override val parameters: String? = null
+                        override val contextLength: Int = config.contextSize
+                    }
+                    Log.i(TAG, "loadModel: SUCCESS")
+                    Result.success(Unit)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadModel: EXCEPTION", e)
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "loadModel: EXCEPTION - ${e.message}", e)
-            Result.failure(e)
         }
     }
 
@@ -99,7 +104,6 @@ class LlamaCppEngine @Inject constructor(
     ): Job {
         val scope = CoroutineScope(Dispatchers.Default)
         val job = scope.launch {
-            // Get current job using coroutineContext - coroutineContext is a built-in property in coroutine scope
             val currentJob = coroutineContext[Job] ?: return@launch
             
             synchronized(this@LlamaCppEngine) {
@@ -107,91 +111,65 @@ class LlamaCppEngine @Inject constructor(
                 currentGenerationJob = currentJob
             }
             
+            var tokenCount = 0
             try {
-                // Capture contextPtr at start - check it throughout
-                val currentContextPtr = contextPtr
+                val currentContextPtr = stateLock.read { contextPtr }
                 if (currentContextPtr == 0L) {
-                    Log.e(TAG, "generateResponse: FAILED - Model not loaded (contextPtr=0)")
-                    synchronized(this@LlamaCppEngine) {
-                        if (currentGenerationJob == currentJob) currentGenerationJob = null
-                    }
+                    Log.e(TAG, "generateResponse: FAILED - Model not loaded")
                     return@launch
                 }
 
                 Log.i(TAG, "generateResponse: START - prompt length=${prompt.length}")
-                // Reset context for new generation
-                if (contextPtr != currentContextPtr || !isActive) {
-                    Log.w(TAG, "generateResponse: cancelled before reset")
-                    return@launch
-                }
-                nativeResetContext(currentContextPtr)
-                Log.d(TAG, "generateResponse: context reset")
                 
-                // Limit token generation to prevent crashes
-                val maxTokens = 500
-                var tokenCount = 0
-                
-                // First call with prompt to initialize
-                Log.d(TAG, "generateResponse: generating first token with prompt")
-                if (contextPtr != currentContextPtr || !isActive) {
-                    Log.w(TAG, "generateResponse: cancelled before first token")
-                    return@launch
+                stateLock.read {
+                    if (contextPtr == currentContextPtr && isActive) {
+                        nativeResetContext(currentContextPtr)
+                        Log.d(TAG, "generateResponse: context reset")
+                    }
                 }
-                var token = nativeGenerateToken(currentContextPtr, prompt)
+                
+                val maxTokens = 1000
+                
+                var token = stateLock.read {
+                    if (contextPtr == currentContextPtr && isActive) {
+                        nativeGenerateToken(currentContextPtr, prompt)
+                    } else ""
+                }
+                
                 var hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
                 
                 while (hasMoreTokens && isActive) {
-                    // Check if context is still valid before each iteration
-                    if (contextPtr != currentContextPtr) {
-                        Log.w(TAG, "generateResponse: model ejected during generation, stopping")
-                        break
-                    }
-                    
                     if (token.isNotEmpty()) {
                         Log.v(TAG, "generateResponse: token[$tokenCount]='${token.take(20)}'")
                         withContext(Dispatchers.Main) {
-                            if (isActive) {
-                                onToken(token)
-                            }
+                            if (isActive) onToken(token)
                         }
                         tokenCount++
-                    } else {
-                        Log.d(TAG, "generateResponse: empty token at count=$tokenCount")
                     }
                     
-                    // Check again before next native call
-                    if (contextPtr != currentContextPtr || !isActive) {
-                        Log.w(TAG, "generateResponse: cancelled before next token")
-                        break
-                    }
+                    if (!isActive) break
                     
-                    // Continue generation with empty string to get next tokens
-                    token = nativeGenerateToken(currentContextPtr, "")
+                    token = stateLock.read {
+                        if (contextPtr == currentContextPtr && isActive) {
+                            nativeGenerateToken(currentContextPtr, "")
+                        } else ""
+                    }
                     hasMoreTokens = token.isNotEmpty() && tokenCount < maxTokens
-                    
-                    if (tokenCount >= maxTokens) {
-                        Log.w(TAG, "generateResponse: reached maxTokens limit ($maxTokens)")
-                        break
-                    }
                 }
 
-                Log.i(TAG, "generateResponse: COMPLETE - totalTokens=$tokenCount")
-                if (isActive) {
-                    withContext(Dispatchers.Main) {
-                        onComplete()
-                    }
-                }
+                Log.i(TAG, "generateResponse: LOOP FINISHED - tokens=$tokenCount")
             } catch (e: Exception) {
-                Log.e(TAG, "generateResponse: EXCEPTION - ${e.message}", e)
-                if (isActive) {
-                    withContext(Dispatchers.Main) {
-                        onComplete()
-                    }
+                if (e !is CancellationException) {
+                    Log.e(TAG, "generateResponse: EXCEPTION", e)
                 }
             } finally {
-                val finalJob = coroutineContext[Job]
+                Log.i(TAG, "generateResponse: FINISHED - total tokens=$tokenCount")
+                // Always call onComplete, even on cancellation, to save partial response
+                withContext(NonCancellable + Dispatchers.Main) {
+                    onComplete()
+                }
                 synchronized(this@LlamaCppEngine) {
-                    if (finalJob != null && currentGenerationJob == finalJob) {
+                    if (currentGenerationJob == coroutineContext[Job]) {
                         currentGenerationJob = null
                     }
                 }
@@ -209,33 +187,28 @@ class LlamaCppEngine @Inject constructor(
     }
 
     override suspend fun ejectModel(): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            Log.i(TAG, "ejectModel: START - contextPtr=$contextPtr")
-            
-            // Cancel any ongoing generation first
-            synchronized(this@LlamaCppEngine) {
-                currentGenerationJob?.cancel()
-                currentGenerationJob = null
-            }
-            
-            // Wait a bit for cancellation to propagate
-            kotlinx.coroutines.delay(50)
-            
-            val ptrToUnload = contextPtr
-            if (ptrToUnload != 0L) {
-                // Set contextPtr to 0 before unloading to prevent new calls
-                contextPtr = 0L
-                currentModelInfo = null
+        stateLock.write {
+            try {
+                Log.i(TAG, "ejectModel: START - contextPtr=$contextPtr")
                 
-                // Now safe to unload native model
-                nativeUnloadModel(ptrToUnload)
-                Log.d(TAG, "ejectModel: native unload completed")
+                synchronized(this@LlamaCppEngine) {
+                    currentGenerationJob?.cancel()
+                    currentGenerationJob = null
+                }
+                
+                val ptrToUnload = contextPtr
+                if (ptrToUnload != 0L) {
+                    contextPtr = 0L
+                    currentModelInfo = null
+                    nativeUnloadModel(ptrToUnload)
+                    Log.d(TAG, "ejectModel: native unload completed")
+                }
+                Log.i(TAG, "ejectModel: SUCCESS")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(TAG, "ejectModel: EXCEPTION", e)
+                Result.failure(e)
             }
-            Log.i(TAG, "ejectModel: SUCCESS")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "ejectModel: EXCEPTION - ${e.message}", e)
-            Result.failure(e)
         }
     }
 
@@ -244,21 +217,21 @@ class LlamaCppEngine @Inject constructor(
     override fun getModelInfo(): ModelInfo? = currentModelInfo
 
     override fun getResourceUsage(): ResourceMetrics {
-        return if (contextPtr == 0L) {
-            ResourceMetrics(0f, 0f, 0f, 0f)
-        } else {
-            try {
-                val usage = nativeGetMemoryUsage(contextPtr)
-                Log.v(TAG, "getResourceUsage: cpu=${usage[0]}, ram=${usage[1]}, vram=${usage[2]}, gpu=${usage[3]}")
-                ResourceMetrics(
-                    cpuUsage = usage[0],
-                    ramUsage = usage[1],
-                    vramUsage = usage[2],
-                    gpuUsage = usage[3]
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "getResourceUsage: EXCEPTION - ${e.message}", e)
+        return stateLock.read {
+            if (contextPtr == 0L) {
                 ResourceMetrics(0f, 0f, 0f, 0f)
+            } else {
+                try {
+                    val usage = nativeGetMemoryUsage(contextPtr)
+                    ResourceMetrics(
+                        cpuUsage = usage[0],
+                        ramUsage = usage[1],
+                        vramUsage = usage[2],
+                        gpuUsage = usage[3]
+                    )
+                } catch (e: Exception) {
+                    ResourceMetrics(0f, 0f, 0f, 0f)
+                }
             }
         }
     }

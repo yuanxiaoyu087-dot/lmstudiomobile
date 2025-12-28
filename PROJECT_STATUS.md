@@ -277,4 +277,12 @@ The project is **fully functional** with all major features implemented:
 - **State Guards:** Hardened the sendMessage logic with strict state guards to prevent parallel message processing and accidental "double-sends."  
 - **UI Responsiveness:** Improved UI responsiveness by disabling message input while the model is actively thinking/generating.
 
+### Version 1.0.7 – Inference Stability & History Persistence
+
+- **Native Stability: LLM Context Reset:** Fixed "Decode failed with code: -1" error by implementing proper KV-cache clearing (`llama_memory_clear`) and sampler reset in the JNI layer. This ensures a clean model state for every new request.
+- **Partial Content Persistence:** Refactored the generation engine with `try-finally` and `NonCancellable` logic. The assistant's response is now guaranteed to be saved to the database even if the generation is manually stopped or interrupted by navigation.
+- **Robust Conversation History:** Removed session-based message filtering that caused context loss during app restarts. The system now consistently uses the last 20 messages for context, making the conversation history persistent across sessions.
+- **Seamless UI Reconnection:** Added automatic state synchronization on screen initialization. If the model is generating in the background, the UI now instantly "picks up" the active streaming content upon returning to the chat screen.
+- **Anti-Flicker Polish:** Implemented a short delay before clearing the streaming state, eliminating the UI "blink" between the end of real-time generation and the appearance of the message from the local database.
+
 ```   

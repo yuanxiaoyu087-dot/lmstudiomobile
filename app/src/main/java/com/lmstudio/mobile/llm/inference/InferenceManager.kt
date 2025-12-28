@@ -7,6 +7,7 @@ import com.lmstudio.mobile.llm.engine.ModelInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,6 +19,16 @@ class InferenceManager @Inject constructor(
 ) {
     private val _state = MutableStateFlow(InferenceState.IDLE)
     val state: StateFlow<InferenceState> = _state.asStateFlow()
+
+    // Shared state for the currently generating message - used by ChatViewModel
+    private val _currentChatId = MutableStateFlow<String?>(null)
+    val currentChatId: StateFlow<String?> = _currentChatId.asStateFlow()
+
+    private val _streamingContent = MutableStateFlow("")
+    val streamingContent: StateFlow<String> = _streamingContent.asStateFlow()
+
+    private val _activeAssistantMessageId = MutableStateFlow<String?>(null)
+    val activeAssistantMessageId: StateFlow<String?> = _activeAssistantMessageId.asStateFlow()
 
     init {
         Log.d(TAG, "InferenceManager initialized")
@@ -52,6 +63,9 @@ class InferenceManager @Inject constructor(
     suspend fun ejectModel(): Result<Unit> {
         Log.i(TAG, "ejectModel START")
         _state.value = InferenceState.IDLE
+        _currentChatId.value = null
+        _streamingContent.value = ""
+        _activeAssistantMessageId.value = null
         return llmEngine.ejectModel().also { result ->
             if (result.isSuccess) {
                 Log.i(TAG, "ejectModel SUCCESS")
@@ -62,39 +76,58 @@ class InferenceManager @Inject constructor(
     }
 
     fun stopGeneration() {
-        Log.i(TAG, "stopGeneration called")
+        Log.i(TAG, "stopGeneration called (sending cancel signal to engine)")
         llmEngine.stopGeneration()
-        if (_state.value == InferenceState.GENERATING) {
-            _state.value = InferenceState.READY
-        }
+        // Note: InferenceState will be updated to READY by the onComplete callback
+        // which always runs even on cancellation via NonCancellable block.
     }
 
     fun generateCompletion(
+        chatId: String,
+        assistantMessageId: String,
         messages: List<Message>,
         onToken: (String) -> Unit,
-        onComplete: () -> Unit
+        onComplete: (String) -> Unit
     ) {
-        Log.i(TAG, "generateCompletion START: messageCount=${messages.size}, state=${_state.value}")
+        Log.i(TAG, "generateCompletion START: chatId=$chatId, messageCount=${messages.size}, state=${_state.value}")
         if (_state.value != InferenceState.READY) {
             Log.w(TAG, "generateCompletion FAILED: state is ${_state.value}, expected READY")
-            onComplete()
+            onComplete("")
             return
         }
 
         _state.value = InferenceState.GENERATING
+        _currentChatId.value = chatId
+        _activeAssistantMessageId.value = assistantMessageId
+        _streamingContent.value = ""
+        
+        Log.d(TAG, "generateCompletion: state set to GENERATING, chatId=$chatId, assistantMessageId=$assistantMessageId")
+        
         val prompt = buildPrompt(messages)
         Log.d(TAG, "generateCompletion prompt built (length=${prompt.length})")
         
         llmEngine.generateResponse(
             prompt = prompt,
             onToken = { token ->
-                Log.v(TAG, "generateCompletion token: '$token'")
+                Log.v(TAG, "generateCompletion token: '${token.take(20)}'")
+                _streamingContent.value += token
                 onToken(token)
             },
             onComplete = {
-                Log.i(TAG, "generateCompletion COMPLETE")
+                val finalContent = _streamingContent.value
+                Log.i(TAG, "generateCompletion COMPLETE: finalContentLength=${finalContent.length}")
                 _state.value = InferenceState.READY
-                onComplete()
+                onComplete(finalContent)
+                
+                // Clear streaming state after a small delay to avoid UI flicker
+                // while the database is saving and reloading messages
+                MainScope().launch {
+                    delay(500)
+                    Log.d(TAG, "generateCompletion: clearing streaming state (delayed)")
+                    _currentChatId.value = null
+                    _activeAssistantMessageId.value = null
+                    _streamingContent.value = ""
+                }
             }
         )
     }
@@ -102,7 +135,7 @@ class InferenceManager @Inject constructor(
     private fun buildPrompt(messages: List<Message>): String {
         val modelInfo = getModelInfo()
         val modelName = modelInfo?.name?.lowercase() ?: ""
-        Log.d(TAG, "buildPrompt: detecting template for model '$modelName' from messages: ${messages.map { "${it.role}:${it.content.take(20)}" }}")
+        Log.d(TAG, "buildPrompt: detecting template for model '$modelName' from messages: ${messages.map { "${it.role}:${it.content.take(100)}" }}")
         
         // Detect model type by name and use appropriate format
         val template = when {
