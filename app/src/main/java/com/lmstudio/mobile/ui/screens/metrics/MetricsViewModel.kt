@@ -18,14 +18,8 @@ import javax.inject.Inject
 data class MetricsState(
     val metrics: ResourceMetrics = ResourceMetrics(0f, 0f, 0f, 0f),
     val systemMetrics: com.lmstudio.mobile.domain.model.SystemMetrics? = null,
-    val modelInfo: ModelInfo? = null,
-    val deviceInfo: String = "Unknown"
-)
-
-data class ModelInfo(
-    val name: String,
-    val parameters: String?,
-    val contextLength: Int
+    val modelInfo: com.lmstudio.mobile.llm.engine.ModelInfo? = null,
+    val deviceCapabilities: com.lmstudio.mobile.domain.model.DeviceCapabilities? = null
 )
 
 @HiltViewModel
@@ -47,27 +41,12 @@ class MetricsViewModel @Inject constructor(
 
     private fun loadDeviceInfo() {
         val capabilities = deviceUtils.getDeviceCapabilities()
-        val gpuInfo = if (capabilities.gpuName != null) {
-            "GPU: ${capabilities.gpuName}"
-        } else {
-            "GPU: Unknown"
-        }
-        _state.value = _state.value.copy(
-            deviceInfo = "CPU Cores: ${capabilities.cpuCores}, RAM: ${capabilities.totalRam / (1024 * 1024 * 1024)}GB, $gpuInfo"
-        )
+        _state.value = _state.value.copy(deviceCapabilities = capabilities)
     }
 
     private fun loadModelInfo() {
         val modelInfo = llmEngine.getModelInfo()
-        if (modelInfo != null) {
-            _state.value = _state.value.copy(
-                modelInfo = ModelInfo(
-                    name = modelInfo.name,
-                    parameters = modelInfo.parameters,
-                    contextLength = modelInfo.contextLength
-                )
-            )
-        }
+        _state.value = _state.value.copy(modelInfo = modelInfo)
     }
 
     fun startMonitoring() {

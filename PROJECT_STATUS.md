@@ -284,5 +284,8 @@ The project is **fully functional** with all major features implemented:
 - **Robust Conversation History:** Removed session-based message filtering that caused context loss during app restarts. The system now consistently uses the last 20 messages for context, making the conversation history persistent across sessions.
 - **Seamless UI Reconnection:** Added automatic state synchronization on screen initialization. If the model is generating in the background, the UI now instantly "picks up" the active streaming content upon returning to the chat screen.
 - **Anti-Flicker Polish:** Implemented a short delay before clearing the streaming state, eliminating the UI "blink" between the end of real-time generation and the appearance of the message from the local database.
+- **Interactive Performance Settings:** Linked UI settings (Threads, GPU Layers, Context Size) directly to the inference engine. Optimized thread allocation with a "Safe 80% Core" recommendation to prevent thermal throttling and system instability.
+- **Accurate Resource Monitoring:** Implemented real CPU usage tracking by reading `/proc/stat`. The metrics screen now reflects actual processing load during token generation.
+- **Detailed Hardware Inventory:** Expanded the Performance Metrics screen to display deep system info, including device model, SoC name (chipset), precise core counts, and total system RAM.
 
 ```   

@@ -12,7 +12,9 @@ import javax.inject.Inject
 
 data class SettingsState(
     val nThreads: Int = 4,
+    val recommendedThreads: Int = 4,
     val nGpuLayers: Int = 0,
+    val recommendedGpuLayers: Int = 0,
     val contextSize: Int = 2048,
     val isDarkTheme: Boolean = false,
     val autoSaveChats: Boolean = true
@@ -20,7 +22,8 @@ data class SettingsState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val preferences: AppPreferences
+    private val preferences: AppPreferences,
+    private val deviceUtils: com.lmstudio.mobile.util.DeviceUtils
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -31,10 +34,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun loadSettings() {
+        val caps = deviceUtils.getDeviceCapabilities()
         viewModelScope.launch {
             _state.value = SettingsState(
                 nThreads = preferences.getNThreads(),
+                recommendedThreads = caps.recommendedThreads,
                 nGpuLayers = preferences.getNGpuLayers(),
+                recommendedGpuLayers = if (caps.hasVulkan) 32 else 0,
                 contextSize = preferences.getContextSize(),
                 isDarkTheme = preferences.isDarkTheme(),
                 autoSaveChats = preferences.isAutoSaveChats()

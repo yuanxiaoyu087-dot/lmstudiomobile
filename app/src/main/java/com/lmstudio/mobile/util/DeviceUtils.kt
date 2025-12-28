@@ -25,6 +25,10 @@ class DeviceUtils @Inject constructor(
         val storageStats = getStorageStats()
         val hasVulkan = checkVulkanSupport()
         val cpuCores = Runtime.getRuntime().availableProcessors()
+        
+        // Use 80% of available cores as recommended, but at least 1 and max 8 (mobile apps 
+        // usually struggle with more due to scheduling/heat)
+        val recommendedThreads = (cpuCores * 0.8f).toInt().coerceIn(1, 8)
 
         return DeviceCapabilities(
             totalRam = totalRam,
@@ -32,10 +36,17 @@ class DeviceUtils @Inject constructor(
             totalStorage = storageStats.total,
             availableStorage = storageStats.available,
             cpuCores = cpuCores,
+            recommendedThreads = recommendedThreads,
             hasVulkan = hasVulkan,
-            gpuName = getGpuName(),
-            gpuVendor = getGpuVendor()
+            gpuName = getHardwareInfo(),
+            gpuVendor = Build.MANUFACTURER,
+            deviceModel = Build.MODEL,
+            socName = Build.BOARD
         )
+    }
+
+    private fun getHardwareInfo(): String {
+        return "${Build.HARDWARE} (${Build.BOARD})"
     }
 
     private fun getStorageStats(): StorageStats {

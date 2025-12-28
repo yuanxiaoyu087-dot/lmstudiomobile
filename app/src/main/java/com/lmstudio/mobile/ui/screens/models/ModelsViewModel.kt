@@ -53,7 +53,15 @@ class ModelsViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val model = modelRepository.getModelById(modelId)
             if (model != null) {
-                val config = InferenceConfig()
+                val threads = appPreferences.getNThreads()
+                val gpuLayers = appPreferences.getNGpuLayers()
+                val contextSize = appPreferences.getContextSize()
+                
+                val config = InferenceConfig(
+                    nThreads = threads,
+                    nGpuLayers = gpuLayers,
+                    contextSize = contextSize
+                )
                 inferenceManager.loadModel(model.path, config).fold(
                     onSuccess = {
                         modelRepository.setModelLoaded(modelId)

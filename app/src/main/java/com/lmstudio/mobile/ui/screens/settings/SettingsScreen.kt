@@ -44,24 +44,27 @@ fun SettingsScreen(
         ) {
             // Inference Settings
             SettingsSection(title = "Inference Settings") {
+                val threadWarning = if (state.nThreads > state.recommendedThreads) " (Above 80% limit!)" else ""
                 SettingsItem(
                     title = "Threads",
                     description = "Number of CPU threads to use for generation.",
-                    helpText = "Higher values use more CPU power and can speed up generation, but may cause the device to overheat or other apps to lag. Recommended: number of physical cores.",
+                    helpText = "Safe recommendation: ${state.recommendedThreads} threads (80% of cores). Higher values$threadWarning can speed up generation but may cause severe thermal throttling or system lag.",
                     value = state.nThreads.toString(),
                     onValueChange = { viewModel.setNThreads(it.toIntOrNull() ?: 4) }
                 )
+                
+                val gpuWarning = if (state.nGpuLayers > state.recommendedGpuLayers && state.recommendedGpuLayers > 0) " (VRAM risk!)" else ""
                 SettingsItem(
                     title = "GPU Layers",
                     description = "Number of layers to offload to GPU (Vulkan).",
-                    helpText = "Offloading layers to GPU can significantly speed up inference. Set to 0 to use CPU only. High values require more VRAM (System RAM on Android).",
+                    helpText = "Recommended: up to ${state.recommendedGpuLayers} layers if supported. Higher values$gpuWarning may exceed System RAM/VRAM limits and cause crashes. Set to 0 to disable acceleration.",
                     value = state.nGpuLayers.toString(),
                     onValueChange = { viewModel.setNGpuLayers(it.toIntOrNull() ?: 0) }
                 )
                 SettingsItem(
                     title = "Context Size",
                     description = "Maximum context window size (tokens).",
-                    helpText = "Determines how much previous conversation history the model can remember. Larger context requires more RAM.",
+                    helpText = "Determines memory usage. 2048-4096 is standard. High values consume significantly more RAM.",
                     value = state.contextSize.toString(),
                     onValueChange = { viewModel.setContextSize(it.toIntOrNull() ?: 2048) }
                 )

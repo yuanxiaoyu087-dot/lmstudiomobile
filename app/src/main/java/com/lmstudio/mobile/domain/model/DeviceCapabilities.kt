@@ -6,8 +6,11 @@ data class DeviceCapabilities(
     val totalStorage: Long,
     val availableStorage: Long,
     val cpuCores: Int,
+    val recommendedThreads: Int,
     val hasVulkan: Boolean,
     val gpuName: String?,
-    val gpuVendor: String?
+    val gpuVendor: String?,
+    val deviceModel: String,
+    val socName: String
 )
 

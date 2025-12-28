@@ -50,29 +50,45 @@ fun MetricsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+            // System Info
+            MetricsSection(title = "System Details") {
+                state.deviceCapabilities?.let { caps ->
+                    InfoCard(title = "Device Model", value = caps.deviceModel)
+                    InfoCard(title = "Processor (SoC)", value = caps.socName)
+                    InfoCard(title = "CPU Cores", value = "${caps.cpuCores} cores")
+                    InfoCard(title = "Safe Core Limit (80%)", value = "${caps.recommendedThreads} threads")
+                    InfoCard(title = "Total System RAM", value = "${caps.totalRam / (1024 * 1024 * 1024)} GB")
+                    InfoCard(title = "GPU / Hardware", value = caps.gpuName ?: "Unknown")
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
             // Resource Usage
-            MetricsSection(title = "System Resource Usage") {
+            MetricsSection(title = "Real-time Monitoring") {
                 state.systemMetrics?.let { system ->
                     MetricCard(
-                        title = "System RAM",
+                        title = "System CPU Usage",
+                        value = "${(system.cpuUsagePercent * 100).toInt()}%",
+                        icon = Icons.Default.Speed,
+                        progress = system.cpuUsagePercent
+                    )
+                    MetricCard(
+                        title = "System RAM Used",
                         value = "${system.ramUsedMb} / ${system.ramTotalMb} MB",
                         icon = Icons.Default.Memory,
                         progress = system.ramUsedMb.toFloat() / system.ramTotalMb.toFloat()
                     )
                 }
                 
-                MetricCard(
-                    title = "LLM Engine CPU",
-                    value = "${(state.metrics.cpuUsage * 100).toInt()}%",
-                    icon = Icons.Default.Speed,
-                    progress = state.metrics.cpuUsage
-                )
-                MetricCard(
-                    title = "LLM Engine VRAM",
-                    value = "${(state.metrics.vramUsage * 100).toInt()}%",
-                    icon = Icons.Default.DeveloperMode,
-                    progress = state.metrics.vramUsage
-                )
+                state.metrics.let { engine ->
+                    MetricCard(
+                        title = "LLM Engine VRAM",
+                        value = "${(engine.vramUsage * 100).toInt()}%",
+                        icon = Icons.Default.DeveloperMode,
+                        progress = engine.vramUsage
+                    )
+                }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -80,33 +96,10 @@ fun MetricsScreen(
             // Model Info
             val modelInfo = state.modelInfo
             if (modelInfo != null) {
-                MetricsSection(title = "Model Information") {
-                    InfoCard(
-                        title = "Model Name",
-                        value = modelInfo.name
-                    )
-                    val parameters = modelInfo.parameters
-                    if (parameters != null) {
-                        InfoCard(
-                            title = "Parameters",
-                            value = parameters
-                        )
-                    }
-                    InfoCard(
-                        title = "Context Length",
-                        value = "${modelInfo.contextLength} tokens"
-                    )
+                MetricsSection(title = "Loaded Model") {
+                    InfoCard(title = "Name", value = modelInfo.name)
+                    InfoCard(title = "Context Length", value = "${modelInfo.contextLength} tokens")
                 }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            // System Info
-            MetricsSection(title = "System Information") {
-                InfoCard(
-                    title = "Device Specs",
-                    value = state.deviceInfo
-                )
             }
         }
     }
