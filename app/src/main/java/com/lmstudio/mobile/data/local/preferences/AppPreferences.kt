@@ -108,4 +108,9 @@ class AppPreferences @Inject constructor(
     suspend fun setLastUsedModelPath(path: String) {
         dataStore.edit { preferences -> preferences[LAST_USED_MODEL_PATH] = path }
     }
+
+    suspend fun hasInferenceSettingsSet(): Boolean {
+        val prefs = dataStore.data.first()
+        return prefs.contains(N_THREADS) || prefs.contains(N_GPU_LAYERS) || prefs.contains(CONTEXT_SIZE)
+    }
 }

@@ -284,7 +284,7 @@ The project is **fully functional** with all major features implemented:
 - **Robust Conversation History**: Removed session-based message filtering that caused context loss during app restarts. The system now consistently uses the last 20 messages for context, making the conversation history persistent across sessions.
 - **Improved UI Responsiveness (ANR Prevention)**: Decoupled resource monitoring from the Main thread in `MetricsViewModel`. Optimized the Engine `stateLock` usage to prevent UI freezes during model management (Load/Eject) while generation is active.
 - **Seamless UI Reconnection**: Added automatic state synchronization on screen initialization. If the model is generating in the background, the UI now instantly "picks up" the active streaming content upon returning to the chat screen.
-- **Interactive Performance Settings**: Linked UI settings (Threads, GPU Layers, Context Size) directly to the inference engine. Optimized thread allocation with a "Safe 80% Core" recommendation to prevent thermal throttling and system instability.
+- **Interactive Performance Settings & Defaults**: Implemented a draft system with an "Apply Changes" button for inference settings. The app now automatically initializes with optimal recommended values (80% CPU cores, safe GPU layers) on the first run to ensure a smooth out-of-the-box experience.
 - **Detailed Hardware Inventory**: Expanded the Performance Metrics screen to display deep system info (SoC, core counts, RAM) and real-time CPU usage tracked via `/proc/stat`.
 
 ```   

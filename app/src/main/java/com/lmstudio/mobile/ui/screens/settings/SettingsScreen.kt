@@ -44,30 +44,55 @@ fun SettingsScreen(
         ) {
             // Inference Settings
             SettingsSection(title = "Inference Settings") {
-                val threadWarning = if (state.nThreads > state.recommendedThreads) " (Above 80% limit!)" else ""
+                val threadWarning = if (state.draftNThreads > state.recommendedThreads) " (Above 80% limit!)" else ""
                 SettingsItem(
                     title = "Threads",
                     description = "Number of CPU threads to use for generation.",
                     helpText = "Safe recommendation: ${state.recommendedThreads} threads (80% of cores). Higher values$threadWarning can speed up generation but may cause severe thermal throttling or system lag.",
-                    value = state.nThreads.toString(),
-                    onValueChange = { viewModel.setNThreads(it.toIntOrNull() ?: 4) }
+                    value = state.draftNThreads.toString(),
+                    onValueChange = { viewModel.setNThreads(it.toIntOrNull() ?: state.draftNThreads) }
                 )
                 
-                val gpuWarning = if (state.nGpuLayers > state.recommendedGpuLayers && state.recommendedGpuLayers > 0) " (VRAM risk!)" else ""
+                val gpuWarning = if (state.draftNGpuLayers > state.recommendedGpuLayers && state.recommendedGpuLayers > 0) " (VRAM risk!)" else ""
                 SettingsItem(
                     title = "GPU Layers",
                     description = "Number of layers to offload to GPU (Vulkan).",
                     helpText = "Recommended: up to ${state.recommendedGpuLayers} layers if supported. Higher values$gpuWarning may exceed System RAM/VRAM limits and cause crashes. Set to 0 to disable acceleration.",
-                    value = state.nGpuLayers.toString(),
-                    onValueChange = { viewModel.setNGpuLayers(it.toIntOrNull() ?: 0) }
+                    value = state.draftNGpuLayers.toString(),
+                    onValueChange = { viewModel.setNGpuLayers(it.toIntOrNull() ?: state.draftNGpuLayers) }
                 )
                 SettingsItem(
                     title = "Context Size",
                     description = "Maximum context window size (tokens).",
                     helpText = "Determines memory usage. 2048-4096 is standard. High values consume significantly more RAM.",
-                    value = state.contextSize.toString(),
-                    onValueChange = { viewModel.setContextSize(it.toIntOrNull() ?: 2048) }
+                    value = state.draftContextSize.toString(),
+                    onValueChange = { viewModel.setContextSize(it.toIntOrNull() ?: state.draftContextSize) }
                 )
+
+                AnimatedVisibility(visible = state.hasUnsavedChanges) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { viewModel.applyInferenceSettings() },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Apply Changes")
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.discardInferenceSettings() },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Discard")
+                        }
+                    }
+                }
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -114,7 +139,7 @@ fun SettingsScreen(
             SettingsSection(title = "About") {
                 SettingsInfoItem(
                     title = "Version",
-                    value = "1.0.1"
+                    value = "1.0.7"
                 )
                 SettingsInfoItem(
                     title = "Build",
