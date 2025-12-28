@@ -21,6 +21,7 @@ struct LlamaContext {
     int n_past = 0;
     std::mutex mutex;
     std::atomic<bool> should_stop{false};
+    std::string piece_buffer;
     
     LlamaContext() : model(nullptr), ctx(nullptr), sampler(nullptr), vocab(nullptr) {}
     
@@ -202,7 +203,47 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
     llama_ctx->n_past++;
     llama_batch_free(batch);
     
-    return env->NewStringUTF(std::string(buf, n).c_str());
+    // Handle UTF-8 fragments: append to buffer and return only complete characters
+    llama_ctx->piece_buffer.append(buf, n);
+    
+    std::string to_return = "";
+    size_t i = 0;
+    while (i < llama_ctx->piece_buffer.length()) {
+        unsigned char c = (unsigned char)llama_ctx->piece_buffer[i];
+        int len = 0;
+        if (c < 0x80) len = 1;
+        else if ((c & 0xE0) == 0xC0) len = 2;
+        else if ((c & 0xF0) == 0xE0) len = 3;
+        else if ((c & 0xF8) == 0xF0) len = 4;
+        else {
+            i++;
+            continue;
+        }
+        
+        if (i + len <= llama_ctx->piece_buffer.length()) {
+            bool valid = true;
+            for (int j = 1; j < len; j++) {
+                if (((unsigned char)llama_ctx->piece_buffer[i + j] & 0xC0) != 0x80) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) {
+                to_return.append(llama_ctx->piece_buffer.substr(i, len));
+                i += len;
+            } else {
+                i++;
+            }
+        } else {
+            break;
+        }
+    }
+    
+    if (i > 0) {
+        llama_ctx->piece_buffer.erase(0, i);
+    }
+    
+    return env->NewStringUTF(to_return.c_str());
 }
 
 JNIEXPORT void JNICALL
@@ -253,7 +294,8 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeResetContext(JNIEnv*, j
     
     llama_ctx->n_past = 0;
     llama_ctx->tokens_list.clear();
-    LOGI("Context reset: KV cache cleared, sampler reset, n_past=0");
+    llama_ctx->piece_buffer.clear();
+    LOGI("Context reset: KV cache cleared, sampler reset, n_past=0, piece_buffer cleared");
 }
 
 JNIEXPORT jfloatArray JNICALL

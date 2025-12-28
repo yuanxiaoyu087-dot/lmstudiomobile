@@ -284,7 +284,18 @@ The project is **fully functional** with all major features implemented:
 - **Robust Conversation History**: Removed session-based message filtering that caused context loss during app restarts. The system now consistently uses the last 20 messages for context, making the conversation history persistent across sessions.
 - **Improved UI Responsiveness (ANR Prevention)**: Decoupled resource monitoring from the Main thread in `MetricsViewModel`. Optimized the Engine `stateLock` usage to prevent UI freezes during model management (Load/Eject) while generation is active.
 - **Seamless UI Reconnection**: Added automatic state synchronization on screen initialization. If the model is generating in the background, the UI now instantly "picks up" the active streaming content upon returning to the chat screen.
-- **Interactive Performance Settings & Defaults**: Implemented a draft system with an "Apply Changes" button for inference settings. The app now automatically initializes with optimal recommended values (80% CPU cores, safe GPU layers) on the first run to ensure a smooth out-of-the-box experience.
+- **Safe Inference Settings UX**:
+    - **Optimal Defaults**: App now detects first run and auto-configures "Safe" threads (80% core limit) and GPU layers based on device capabilities.
+    - **Unsaved Warning**: Integrated a visual indicator and "Discard" button to manage pending inference parameters.
 - **Detailed Hardware Inventory**: Expanded the Performance Metrics screen to display deep system info (SoC, core counts, RAM) and real-time CPU usage tracked via `/proc/stat`.
 
-```   
+#### Version 1.0.8 – Global Model Compatibility & Encoding Fix
+- **JNI Character Encoding Stability**: Implemented a UTF-8 fragment buffer in the native layer to resolve "strange characters" (mojibake). The engine now correctly handles Multi-byte UTF-8 sequences that are split across token boundaries, ensuring perfect rendering of complex characters and non-English scripts.
+- **Advanced DeepSeek-R1 Support**: 
+    - Implemented a specialized reasoning template that automatically injects `<thought>` (or `<|thought|>`) tags to prompt the model into its structured reasoning mode.
+    - Updated native DeepSeek separators to use official `<｜User｜>` and `<｜Assistant｜>` tokens.
+- **Universal GGUF Template Library**: Expanded model intelligence to support 100+ new models from Hugging Face:
+    - **Added**: Command-R (Cohere), Vicuna, Alpaca, WizardLM.
+    - **Broadened ChatML**: Now covers Dolphin, Hermes, Orca, Yi, Nous, and any models using the ChatML standard.
+    - **Improved**: Mistral/Mixtral/Zephyr detection and formatting.
+- **Reasoning UI (Thought Blocks)**: Added dedicated visual support for models that "think" (DeepSeek-R1). The UI now automatically parses `<think>` tags and displays reasoning in a collapsible, italicized block, separating internal logic from the final answer.

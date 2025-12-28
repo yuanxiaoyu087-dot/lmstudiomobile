@@ -143,14 +143,18 @@ class InferenceManager @Inject constructor(
         
         // Detect model type by name and use appropriate format
         val template = when {
+            modelName.contains("deepseek") -> ChatTemplate.DEEPSEEK
             modelName.contains("gemma") -> ChatTemplate.GEMMA
             modelName.contains("llama") && (modelName.contains("3") || modelName.contains("3.1") || modelName.contains("3.2")) -> ChatTemplate.LLAMA3
             modelName.contains("llama") && modelName.contains("2") -> ChatTemplate.LLAMA2
-            modelName.contains("mistral") -> ChatTemplate.MISTRAL
+            modelName.contains("mistral") || modelName.contains("mixtral") || modelName.contains("zephyr") -> ChatTemplate.MISTRAL
             modelName.contains("phi") -> ChatTemplate.PHI
-            modelName.contains("qwen") -> ChatTemplate.QWEN
-            modelName.contains("deepseek") -> ChatTemplate.DEEPSEEK
-            else -> ChatTemplate.UNIVERSAL // Universal format for unknown models
+            modelName.contains("command-r") || modelName.contains("c4ai") -> ChatTemplate.COMMAND_R
+            modelName.contains("vicuna") || modelName.contains("wizardlm") || modelName.contains("alpaca") -> ChatTemplate.VICUNA
+            // ChatML detection for many fine-tuned models
+            modelName.contains("qwen") || modelName.contains("hermes") || modelName.contains("dolphin") || 
+            modelName.contains("yi") || modelName.contains("orca") || modelName.contains("chatml") -> ChatTemplate.QWEN
+            else -> ChatTemplate.UNIVERSAL
         }
         
         Log.d(TAG, "buildPrompt: using template $template")
@@ -163,12 +167,14 @@ class InferenceManager @Inject constructor(
             ChatTemplate.PHI -> buildPhiPrompt(messages)
             ChatTemplate.QWEN -> buildQwenPrompt(messages)
             ChatTemplate.DEEPSEEK -> buildDeepSeekPrompt(messages)
+            ChatTemplate.COMMAND_R -> buildCommandRPrompt(messages)
+            ChatTemplate.VICUNA -> buildVicunaPrompt(messages)
             ChatTemplate.UNIVERSAL -> buildUniversalPrompt(messages)
         }
     }
     
     private enum class ChatTemplate {
-        GEMMA, LLAMA3, LLAMA2, MISTRAL, PHI, QWEN, DEEPSEEK, UNIVERSAL
+        GEMMA, LLAMA3, LLAMA2, MISTRAL, PHI, QWEN, DEEPSEEK, COMMAND_R, VICUNA, UNIVERSAL
     }
     
     private fun buildGemmaPrompt(messages: List<Message>): String {
@@ -340,36 +346,93 @@ class InferenceManager @Inject constructor(
             }
         }
         
+        // No forced <thought> here, Distill models will generate it naturally
         prompt.append("<|im_start|>assistant\n")
         return prompt.toString()
     }
-    
+
     private fun buildDeepSeekPrompt(messages: List<Message>): String {
+        val modelName = getModelInfo()?.name?.lowercase() ?: ""
+        
+        // DeepSeek-R1-Distill-Qwen models are essentially Qwen models
+        if (modelName.contains("qwen") || modelName.contains("distill")) {
+            return buildQwenPrompt(messages)
+        }
+        
+        // Native DeepSeek-V3/R1 Template
+        val prompt = StringBuilder()
+        // DeepSeek usually doesn't need a BOS in the string itself because llama_tokenize handles it
+        
+        messages.forEach { message ->
+            when (message.role) {
+                com.lmstudio.mobile.domain.model.MessageRole.SYSTEM -> {
+                    // System messages are often prepended to user prompt in DeepSeek
+                    prompt.append(message.content.trim()).append("\n\n")
+                }
+                com.lmstudio.mobile.domain.model.MessageRole.USER -> {
+                    prompt.append("<｜User｜>").append(message.content.trim())
+                }
+                com.lmstudio.mobile.domain.model.MessageRole.ASSISTANT -> {
+                    prompt.append("<｜Assistant｜>").append(message.content.trim()).append("<｜end of sentence｜>")
+                }
+            }
+        }
+        
+        prompt.append("<｜Assistant｜>")
+        // For native R1, we can add the thought tag if we want to force reasoning, 
+        // but let's see if it works without it first to be safe.
+        return prompt.toString()
+    }
+    
+    private fun buildCommandRPrompt(messages: List<Message>): String {
+        val prompt = StringBuilder()
+        prompt.append("<BOS_TOKEN>")
+        
+        messages.forEach { message ->
+            when (message.role) {
+                com.lmstudio.mobile.domain.model.MessageRole.SYSTEM -> {
+                    prompt.append("<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>")
+                    prompt.append(message.content.trim())
+                    prompt.append("<|END_OF_TURN_TOKEN|>")
+                }
+                com.lmstudio.mobile.domain.model.MessageRole.USER -> {
+                    prompt.append("<|START_OF_TURN_TOKEN|><|USER_TOKEN|>")
+                    prompt.append(message.content.trim())
+                    prompt.append("<|END_OF_TURN_TOKEN|>")
+                }
+                com.lmstudio.mobile.domain.model.MessageRole.ASSISTANT -> {
+                    prompt.append("<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>")
+                    prompt.append(message.content.trim())
+                    prompt.append("<|END_OF_TURN_TOKEN|>")
+                }
+            }
+        }
+        
+        prompt.append("<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>")
+        return prompt.toString()
+    }
+    
+    private fun buildVicunaPrompt(messages: List<Message>): String {
         val prompt = StringBuilder()
         
         messages.forEach { message ->
             when (message.role) {
                 com.lmstudio.mobile.domain.model.MessageRole.SYSTEM -> {
-                    prompt.append(message.content.trim())
-                    prompt.append("\n\n")
+                    prompt.append(message.content.trim()).append("\n\n")
                 }
                 com.lmstudio.mobile.domain.model.MessageRole.USER -> {
-                    prompt.append("User: ")
-                    prompt.append(message.content.trim())
-                    prompt.append("\n\n")
+                    prompt.append("USER: ").append(message.content.trim()).append("\n")
                 }
                 com.lmstudio.mobile.domain.model.MessageRole.ASSISTANT -> {
-                    prompt.append("Assistant: ")
-                    prompt.append(message.content.trim())
-                    prompt.append("\n\n")
+                    prompt.append("ASSISTANT: ").append(message.content.trim()).append("</s>\n")
                 }
             }
         }
         
-        prompt.append("Assistant: ")
+        prompt.append("ASSISTANT: ")
         return prompt.toString()
     }
-    
+
     private fun buildUniversalPrompt(messages: List<Message>): String {
         // Universal format that works with most models
         val prompt = StringBuilder()

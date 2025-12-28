@@ -1,405 +1,166 @@
-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: state set to GENERATING, chatId=c585c567-e41f-41ef-854d-22adba7727ea, assistantMessageId=262ada7d-150e-4eae-a52d-d3675a1b9ad9
-2025-12-28 07:40:42.182 28834-28834 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=gemma-3-1b-it.Q2_K.gguf, contextLength=2048
-2025-12-28 07:40:42.182 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: detecting template for model 'gemma-3-1b-it.q2_k.gguf' from messages: [USER:hi]
-2025-12-28 07:40:42.182 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: using template GEMMA
-2025-12-28 07:40:42.182 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion prompt built (length=57)
-2025-12-28 07:40:42.184 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: START - prompt length=57
-2025-12-28 07:40:42.222 28834-28856 LlamaJNI                com.lmstudio.mobile                  I  Context reset: KV cache cleared, sampler reset, n_past=0
-2025-12-28 07:40:42.222 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  D  generateResponse: context reset
-2025-12-28 07:40:42.260   817-2194  CoreBackPreview         system_server                        D  Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@55ceef6, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
-2025-12-28 07:40:59.027 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  ChatViewModel initialized
-2025-12-28 07:40:59.028 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  ViewModel picking up active generation in chat: c585c567-e41f-41ef-854d-22adba7727ea
-2025-12-28 07:40:59.028 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:41:10.964 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[0]='Hi'
-2025-12-28 07:41:10.973 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'Hi'
-2025-12-28 07:41:15.605 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[1]=' there'
-2025-12-28 07:41:15.614 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' there'
-2025-12-28 07:41:17.521 28834-28834 DownloadManager         com.lmstudio.mobile                  D  DownloadManager initialized
-2025-12-28 07:41:20.177 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[2]='!'
-2025-12-28 07:41:20.177 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '!'
-2025-12-28 07:41:24.486 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[3]=' How'
-2025-12-28 07:41:24.488 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' How'
-2025-12-28 07:41:28.688 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[4]=' are'
-2025-12-28 07:41:28.690 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' are'
-2025-12-28 07:41:33.134 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[5]=' you'
-2025-12-28 07:41:33.135 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' you'
-2025-12-28 07:41:33.266 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  ChatViewModel initialized
-2025-12-28 07:41:33.266 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  ViewModel picking up active generation in chat: c585c567-e41f-41ef-854d-22adba7727ea
-2025-12-28 07:41:33.266 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:41:37.728 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[6]=' doing'
-2025-12-28 07:41:37.729 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' doing'
-2025-12-28 07:41:42.084 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[7]=' today'
-2025-12-28 07:41:42.087 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' today'
-2025-12-28 07:41:46.035 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[8]='?'
-2025-12-28 07:41:46.036 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '?'
-2025-12-28 07:41:49.906 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[9]=' 😊'
-2025-12-28 07:41:49.908 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' 😊'
-2025-12-28 07:41:53.698 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[10]=' '
-2025-12-28 07:41:53.702 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' '
-2025-12-28 07:41:57.570 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[11]='
-                                                                                                    
+2025-12-28 08:49:52.852 31539-31539 VRI[MainActivity]       com.lmstudio.mobile                  D  WindowInsets changed: 1080x2400 statusBars:[0,63,0,0] navigationBars:[0,0,0,63] mandatorySystemGestures:[0,63,0,84] 
+2025-12-28 08:49:52.855   817-852   CoreBackPreview         system_server                        D  Window{4f83e22 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@2801a6e, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+2025-12-28 08:49:53.408 31539-31539 LlamaCppEngine          com.lmstudio.mobile                  I  Native library 'llama_jni' loaded successfully
+2025-12-28 08:49:53.410 31539-31539 AppStartup              com.lmstudio.mobile                  D  LLMModule: providing InferenceManager...
+2025-12-28 08:49:53.413 31539-31539 InferenceManager        com.lmstudio.mobile                  D  InferenceManager initialized
+2025-12-28 08:49:53.420 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  ChatViewModel initialized
+2025-12-28 08:49:53.421 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: IDLE
+2025-12-28 08:49:53.622   817-856   ActivityTaskManager     system_server                        I  Displayed com.lmstudio.mobile/.MainActivity for user 0: +2s506ms
+2025-12-28 08:50:09.470 31539-31539 InferenceManager        com.lmstudio.mobile                  I  loadModel START: path=/storage/emulated/0/Android/data/com.lmstudio.mobile/files/models/DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, nThreads=1, nGpuLayers=0, contextSize=2048
+2025-12-28 08:50:09.470 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: LOADING
+2025-12-28 08:50:09.472 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  I  loadModel: path=/storage/emulated/0/Android/data/com.lmstudio.mobile/files/models/DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, threads=1, gpuLayers=0, contextSize=2048
+2025-12-28 08:50:09.480 31539-31565 LlamaJNI                com.lmstudio.mobile                  I  Native loading: /storage/emulated/0/Android/data/com.lmstudio.mobile/files/models/DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf
+2025-12-28 08:50:15.444 31539-31565 LlamaJNI                com.lmstudio.mobile                  I  Model loaded pointer: 0x79fa41231c20
+2025-12-28 08:50:15.447 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  I  loadModel: SUCCESS
+2025-12-28 08:50:15.461 31539-31539 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, contextLength=2048
+2025-12-28 08:50:15.461 31539-31539 InferenceManager        com.lmstudio.mobile                  I  loadModel SUCCESS: DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf
+2025-12-28 08:50:15.461 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
+2025-12-28 08:50:18.177   817-851   CoreBackPreview         system_server                        D  Window{4f83e22 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b2be9d2, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+2025-12-28 08:50:25.418 31539-31539 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
+2025-12-28 08:50:25.418 31539-31539 ChatViewModel           com.lmstudio.mobile                  I  sendMessage called: length=17, modelLoaded=true
+2025-12-28 08:50:25.418 31539-31539 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
+2025-12-28 08:50:25.462 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  Starting generation with prompt from 1 messages
+2025-12-28 08:50:25.464 31539-31539 InferenceManager        com.lmstudio.mobile                  I  generateCompletion START: chatId=f10faf1f-89d4-4c81-a16a-29cf2bc9b45f, messageCount=1, state=READY
+2025-12-28 08:50:25.465 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
+2025-12-28 08:50:25.466 31539-31539 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: state set to GENERATING, chatId=f10faf1f-89d4-4c81-a16a-29cf2bc9b45f, assistantMessageId=ae8ea348-0cd4-4894-a39b-83a8d98acfce
+2025-12-28 08:50:25.466 31539-31539 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, contextLength=2048
+2025-12-28 08:50:25.466 31539-31539 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: detecting template for model 'deepseek-r1-distill-qwen-1.5b-q3_k_m.gguf' from messages: [USER:capital of russia]
+2025-12-28 08:50:25.467 31539-31539 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: using template DEEPSEEK
+2025-12-28 08:50:25.468 31539-31539 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, contextLength=2048
+2025-12-28 08:50:25.468 31539-31539 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=DeepSeek-R1-Distill-Qwen-1.5B-Q3_K_M.gguf, contextLength=2048
+2025-12-28 08:50:25.468 31539-31539 InferenceManager        com.lmstudio.mobile                  D  generateCompletion prompt built (length=79)
+2025-12-28 08:50:25.500 31539-31567 LlamaJNI                com.lmstudio.mobile                  I  Native stop flag reset
+2025-12-28 08:50:25.500 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: START - prompt length=79
+2025-12-28 08:50:25.514 31539-31567 LlamaJNI                com.lmstudio.mobile                  I  Context reset: KV cache cleared, sampler reset, n_past=0, piece_buffer cleared
+2025-12-28 08:50:25.514 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  D  generateResponse: context reset
+2025-12-28 08:50:25.554   817-1592  CoreBackPreview         system_server                        D  Window{4f83e22 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f99ec6f, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+2025-12-28 08:53:03.977 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[0]='<'
+2025-12-28 08:53:03.994 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:53:11.501 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[1]='|'
+2025-12-28 08:53:11.502 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:53:19.079 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[2]='im'
+2025-12-28 08:53:19.096 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:53:26.592 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[3]='_start'
+2025-12-28 08:53:26.600 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_start'
+2025-12-28 08:53:33.942 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[4]='|'
+2025-12-28 08:53:33.948 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:53:41.435 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[5]='>'
+2025-12-28 08:53:41.436 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>'
+2025-12-28 08:53:48.940 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[6]='user'
+2025-12-28 08:53:48.948 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'user'
+2025-12-28 08:53:56.372 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[7]='
                                                                                                     '
-2025-12-28 07:41:57.572 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
-                                                                                                    
+2025-12-28 08:53:56.382 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
                                                                                                     '
-2025-12-28 07:42:01.447 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[12]='I'
-2025-12-28 07:42:01.450 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'I'
-2025-12-28 07:42:05.333 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[13]='''
-2025-12-28 07:42:05.334 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '''
-2025-12-28 07:42:09.211 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[14]='m'
-2025-12-28 07:42:09.215 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'm'
-2025-12-28 07:42:13.098 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[15]=' here'
-2025-12-28 07:42:13.102 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' here'
-2025-12-28 07:42:17.046 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[16]=' to'
-2025-12-28 07:42:17.048 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' to'
-2025-12-28 07:42:20.839 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[17]=' help'
-2025-12-28 07:42:20.842 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' help'
-2025-12-28 07:42:24.585 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[18]=' you'
-2025-12-28 07:42:24.588 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' you'
-2025-12-28 07:42:28.426 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[19]=' with'
-2025-12-28 07:42:28.430 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' with'
-2025-12-28 07:42:32.184 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[20]=' anything'
-2025-12-28 07:42:32.185 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' anything'
-2025-12-28 07:42:36.143 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[21]=' you'
-2025-12-28 07:42:36.144 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' you'
-2025-12-28 07:42:39.881 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[22]=' need'
-2025-12-28 07:42:39.883 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' need'
-2025-12-28 07:42:43.650 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[23]='.'
-2025-12-28 07:42:43.652 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '.'
-2025-12-28 07:42:47.612 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[24]='  '
-2025-12-28 07:42:47.614 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '  '
-2025-12-28 07:42:51.480 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[25]='Do'
-2025-12-28 07:42:51.482 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'Do'
-2025-12-28 07:42:55.406 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[26]=' you'
-2025-12-28 07:42:55.441 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' you'
-2025-12-28 07:42:59.203 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[27]=' have'
-2025-12-28 07:42:59.206 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' have'
-2025-12-28 07:43:03.059 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[28]=' any'
-2025-12-28 07:43:03.062 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' any'
-2025-12-28 07:43:07.258 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[29]=' questions'
-2025-12-28 07:43:07.259 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' questions'
-2025-12-28 07:43:11.193 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[30]=','
-2025-12-28 07:43:11.194 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ','
-2025-12-28 07:43:15.195 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[31]=' or'
-2025-12-28 07:43:15.195 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' or'
-2025-12-28 07:43:18.982 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[32]=' would'
-2025-12-28 07:43:18.985 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' would'
-2025-12-28 07:43:22.980 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[33]=' you'
-2025-12-28 07:43:22.981 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' you'
-2025-12-28 07:43:26.871 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[34]=' like'
-2025-12-28 07:43:26.874 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' like'
-2025-12-28 07:43:30.907 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[35]=' to'
-2025-12-28 07:43:30.916 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' to'
-2025-12-28 07:43:34.707 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[36]=' chat'
-2025-12-28 07:43:34.709 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' chat'
-2025-12-28 07:43:38.602 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[37]=' about'
-2025-12-28 07:43:38.604 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' about'
-2025-12-28 07:43:42.560 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[38]=' something'
-2025-12-28 07:43:42.573 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' something'
-2025-12-28 07:43:46.513 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[39]='?'
-2025-12-28 07:43:46.514 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '?'
-2025-12-28 07:43:46.541 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: LOOP FINISHED - tokens=40
-2025-12-28 07:43:46.541 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: FINISHED - total tokens=40
-2025-12-28 07:43:46.545 28834-28834 InferenceManager        com.lmstudio.mobile                  I  generateCompletion COMPLETE: finalContentLength=155
-2025-12-28 07:43:46.545 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:43:46.563 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:43:46.563 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:43:46.563 28834-28834 ChatViewModel           com.lmstudio.mobile                  I  Generation completed, tokens received: 155
-2025-12-28 07:43:46.607 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  Saved assistant message to database: id=262ada7d-150e-4eae-a52d-d3675a1b9ad9
-2025-12-28 07:43:47.074 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: clearing streaming state (delayed)
-2025-12-28 07:45:11.767   817-2190  CoreBackPreview         system_server                        D  Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@9b83842, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
-2025-12-28 07:45:23.575 28834-28834 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
-2025-12-28 07:45:23.575 28834-28834 ChatViewModel           com.lmstudio.mobile                  I  sendMessage called: length=21, modelLoaded=true
-2025-12-28 07:45:23.575 28834-28834 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
-2025-12-28 07:45:23.580 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  Starting generation with prompt from 3 messages
-2025-12-28 07:45:23.580 28834-28834 InferenceManager        com.lmstudio.mobile                  I  generateCompletion START: chatId=c585c567-e41f-41ef-854d-22adba7727ea, messageCount=3, state=READY
-2025-12-28 07:45:23.581 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:45:23.582 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:45:23.583 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:45:23.583 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: state set to GENERATING, chatId=c585c567-e41f-41ef-854d-22adba7727ea, assistantMessageId=57fae6c0-5cfa-471d-a7a5-c47bdd4aeeb2
-2025-12-28 07:45:23.583 28834-28834 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=gemma-3-1b-it.Q2_K.gguf, contextLength=2048
-2025-12-28 07:45:23.583 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: detecting template for model 'gemma-3-1b-it.q2_k.gguf' from messages: [USER:hi, ASSISTANT:Hi there! How are you doing today? 😊 
-                                                                                                    
-                                                                                                    I'm here to help you with anything you need.  Do you have an, USER:bubble sort in python]
-2025-12-28 07:45:23.583 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: using template GEMMA
-2025-12-28 07:45:23.583 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion prompt built (length=302)
-2025-12-28 07:45:23.583 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: START - prompt length=302
-2025-12-28 07:45:23.606 28834-28858 LlamaJNI                com.lmstudio.mobile                  I  Context reset: KV cache cleared, sampler reset, n_past=0
-2025-12-28 07:45:23.607 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  D  generateResponse: context reset
-2025-12-28 07:45:23.623   817-2190  CoreBackPreview         system_server                        D  Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@3ec6440, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
-2025-12-28 07:47:53.494 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[0]='Okay'
-2025-12-28 07:47:53.502 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'Okay'
-2025-12-28 07:47:58.002 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[1]=','
-2025-12-28 07:47:58.012 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ','
-2025-12-28 07:48:02.408 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[2]=' let'
-2025-12-28 07:48:02.412 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' let'
-2025-12-28 07:48:06.844 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[3]='''
-2025-12-28 07:48:06.847 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '''
-2025-12-28 07:48:11.322 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[4]='s'
-2025-12-28 07:48:11.323 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 's'
-2025-12-28 07:48:15.862 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[5]=' talk'
-2025-12-28 07:48:15.864 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' talk'
-2025-12-28 07:48:20.330 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[6]=' about'
-2025-12-28 07:48:20.331 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' about'
-2025-12-28 07:48:24.664 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[7]=' Bubble'
-2025-12-28 07:48:24.678 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Bubble'
-2025-12-28 07:48:29.120 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[8]=' Sort'
-2025-12-28 07:48:29.128 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Sort'
-2025-12-28 07:48:33.579 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[9]=' in'
-2025-12-28 07:48:33.580 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' in'
-2025-12-28 07:48:37.903 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[10]=' Python'
-2025-12-28 07:48:37.905 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Python'
-2025-12-28 07:48:42.160 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[11]='!'
-2025-12-28 07:48:42.163 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '!'
-2025-12-28 07:48:46.472 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[12]=' Here'
-2025-12-28 07:48:46.478 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Here'
-2025-12-28 07:48:50.873 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[13]='''
-2025-12-28 07:48:50.875 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '''
-2025-12-28 07:48:55.196 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[14]='s'
-2025-12-28 07:48:55.199 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 's'
-2025-12-28 07:48:59.502 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[15]=' a'
-2025-12-28 07:48:59.503 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' a'
-2025-12-28 07:49:04.005 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[16]=' breakdown'
-2025-12-28 07:49:04.011 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' breakdown'
-2025-12-28 07:49:08.548 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[17]=' of'
-2025-12-28 07:49:08.550 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' of'
-2025-12-28 07:49:13.002 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[18]=' how'
-2025-12-28 07:49:13.005 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' how'
-2025-12-28 07:49:17.364 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[19]=' it'
-2025-12-28 07:49:17.366 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' it'
-2025-12-28 07:49:21.778 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[20]=' works'
-2025-12-28 07:49:21.780 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' works'
-2025-12-28 07:49:26.202 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[21]=' and'
-2025-12-28 07:49:26.203 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' and'
-2025-12-28 07:49:30.499 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[22]=' a'
-2025-12-28 07:49:30.500 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' a'
-2025-12-28 07:49:34.781 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[23]=' Python'
-2025-12-28 07:49:34.782 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Python'
-2025-12-28 07:49:39.164 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[24]=' code'
-2025-12-28 07:49:39.166 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' code'
-2025-12-28 07:49:43.494 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[25]=' example'
-2025-12-28 07:49:43.496 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' example'
-2025-12-28 07:49:47.860 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[26]=':'
-2025-12-28 07:49:47.863 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ':'
-2025-12-28 07:49:52.323 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[27]='
-                                                                                                    
+2025-12-28 08:54:04.086 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[8]='<'
+2025-12-28 08:54:04.092 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:54:11.832 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[9]='|'
+2025-12-28 08:54:11.834 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:54:19.504 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[10]='im'
+2025-12-28 08:54:19.511 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:54:27.265 31539-31567 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[11]='_end'
+2025-12-28 08:54:27.270 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_end'
+2025-12-28 08:54:34.898 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[12]='|'
+2025-12-28 08:54:34.912 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:54:42.538 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[13]='>
                                                                                                     '
-2025-12-28 07:49:52.328 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
-                                                                                                    
+2025-12-28 08:54:42.542 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>
                                                                                                     '
-2025-12-28 07:49:56.842 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[28]='**'
-2025-12-28 07:49:56.860 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '**'
-2025-12-28 07:50:01.261 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[29]='What'
-2025-12-28 07:50:01.262 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'What'
-2025-12-28 07:50:05.686 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[30]=' is'
-2025-12-28 07:50:05.688 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' is'
-2025-12-28 07:50:10.009 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[31]=' Bubble'
-2025-12-28 07:50:10.010 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Bubble'
-2025-12-28 07:50:14.328 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[32]=' Sort'
-2025-12-28 07:50:14.329 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Sort'
-2025-12-28 07:50:18.691 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[33]='?'
-2025-12-28 07:50:18.695 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '?'
-2025-12-28 07:50:23.029 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[34]='**'
-2025-12-28 07:50:23.031 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '**'
-2025-12-28 07:50:27.359 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[35]='
-                                                                                                    
+2025-12-28 08:54:50.484 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[14]='<'
+2025-12-28 08:54:50.487 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:54:58.151 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[15]='|'
+2025-12-28 08:54:58.155 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:55:05.677 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[16]='im'
+2025-12-28 08:55:05.686 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:55:13.076 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[17]='_start'
+2025-12-28 08:55:13.080 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_start'
+2025-12-28 08:55:20.459 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[18]='|'
+2025-12-28 08:55:20.466 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:55:28.185 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[19]='>'
+2025-12-28 08:55:28.186 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>'
+2025-12-28 08:55:36.112 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[20]='assistant'
+2025-12-28 08:55:36.127 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'assistant'
+2025-12-28 08:55:44.022 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[21]='
                                                                                                     '
-2025-12-28 07:50:27.365 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
-                                                                                                    
+2025-12-28 08:55:44.045 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
                                                                                                     '
-2025-12-28 07:50:31.706 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[36]='Bubble'
-2025-12-28 07:50:31.712 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'Bubble'
-2025-12-28 07:50:36.163 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[37]=' Sort'
-2025-12-28 07:50:36.164 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' Sort'
-2025-12-28 07:50:40.515 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[38]=' is'
-2025-12-28 07:50:40.516 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' is'
-2025-12-28 07:50:44.959 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[39]=' a'
-2025-12-28 07:50:44.962 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' a'
-2025-12-28 07:50:49.356 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[40]=' simple'
-2025-12-28 07:50:49.360 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' simple'
-2025-12-28 07:50:53.622 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[41]=' sorting'
-2025-12-28 07:50:53.629 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' sorting'
-2025-12-28 07:50:58.024 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[42]=' algorithm'
-2025-12-28 07:50:58.030 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' algorithm'
-2025-12-28 07:51:02.493 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[43]=' that'
-2025-12-28 07:51:02.494 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' that'
-2025-12-28 07:51:06.925 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[44]=' works'
-2025-12-28 07:51:06.930 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' works'
-2025-12-28 07:51:11.271 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[45]=' by'
-2025-12-28 07:51:11.274 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' by'
-2025-12-28 07:51:15.637 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[46]=' repeatedly'
-2025-12-28 07:51:15.638 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' repeatedly'
-2025-12-28 07:51:19.892 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[47]=' stepping'
-2025-12-28 07:51:19.893 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' stepping'
-2025-12-28 07:51:24.153 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[48]=' through'
-2025-12-28 07:51:24.156 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' through'
-2025-12-28 07:51:28.456 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[49]=' the'
-2025-12-28 07:51:28.459 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' the'
-2025-12-28 07:51:32.747 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[50]=' list'
-2025-12-28 07:51:32.750 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' list'
-2025-12-28 07:51:37.177 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[51]=' and'
-2025-12-28 07:51:37.181 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' and'
-2025-12-28 07:51:41.677 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[52]=' comparing'
-2025-12-28 07:51:41.680 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' comparing'
-2025-12-28 07:51:46.123 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[53]=' adjacent'
-2025-12-28 07:51:46.129 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' adjacent'
-2025-12-28 07:51:50.609 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[54]=' elements'
-2025-12-28 07:51:50.627 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' elements'
-2025-12-28 07:51:55.373 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[55]='.'
-2025-12-28 07:51:55.395 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '.'
-2025-12-28 07:51:59.947 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[56]='  '
-2025-12-28 07:51:59.948 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '  '
-2025-12-28 07:52:04.402 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[57]='If'
-2025-12-28 07:52:04.403 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'If'
-2025-12-28 07:52:08.940 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[58]=' the'
-2025-12-28 07:52:08.949 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' the'
-2025-12-28 07:52:14.096 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[59]=' elements'
-2025-12-28 07:52:14.100 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' elements'
-2025-12-28 07:52:18.986 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[60]=' are'
-2025-12-28 07:52:18.989 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' are'
-2025-12-28 07:52:23.954 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[61]=' in'
-2025-12-28 07:52:23.957 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' in'
-2025-12-28 07:52:28.460 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[62]=' the'
-2025-12-28 07:52:28.464 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' the'
-2025-12-28 07:52:32.836 28834-28858 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[63]=' wrong'
-2025-12-28 07:52:32.838 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' wrong'
-2025-12-28 07:52:37.303 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[64]=' order'
-2025-12-28 07:52:37.304 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' order'
-2025-12-28 07:52:41.734 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[65]=' ('
-2025-12-28 07:52:41.735 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' ('
-2025-12-28 07:52:46.143 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[66]='e'
-2025-12-28 07:52:46.146 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'e'
-2025-12-28 07:52:50.599 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[67]='.'
-2025-12-28 07:52:50.600 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '.'
-2025-12-28 07:52:56.066 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[68]='g'
-2025-12-28 07:52:56.077 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'g'
-2025-12-28 07:53:00.555 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[69]='.,'
-2025-12-28 07:53:00.556 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '.,'
-2025-12-28 07:53:04.790 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[70]=' the'
-2025-12-28 07:53:04.795 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' the'
-2025-12-28 07:53:09.714 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[71]=' first'
-2025-12-28 07:53:09.728 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' first'
-2025-12-28 07:53:14.318 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[72]=' element'
-2025-12-28 07:53:14.323 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' element'
-2025-12-28 07:53:18.719 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[73]=' is'
-2025-12-28 07:53:18.721 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' is'
-2025-12-28 07:53:23.033 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[74]=' smaller'
-2025-12-28 07:53:23.035 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' smaller'
-2025-12-28 07:53:27.596 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[75]=' than'
-2025-12-28 07:53:27.598 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' than'
-2025-12-28 07:53:32.090 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[76]=' the'
-2025-12-28 07:53:32.095 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' the'
-2025-12-28 07:53:36.569 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[77]=' second'
-2025-12-28 07:53:36.571 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' second'
-2025-12-28 07:53:40.873 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[78]='),'
-2025-12-28 07:53:40.877 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '),'
-2025-12-28 07:53:45.264 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[79]=' they'
-2025-12-28 07:53:45.267 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' they'
-2025-12-28 07:53:49.817 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[80]=' are'
-2025-12-28 07:53:49.818 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' are'
-2025-12-28 07:53:54.285 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[81]=' swapped'
-2025-12-28 07:53:54.287 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: ' swapped'
-2025-12-28 07:53:58.858 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[82]='.'
-2025-12-28 07:53:58.864 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '.'
-2025-12-28 07:54:03.397 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[83]='  '
-2025-12-28 07:54:03.398 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '  '
-2025-12-28 07:54:08.003 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[84]='This'
-2025-12-28 07:54:08.005 28834-28834 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'This'
-2025-12-28 07:54:09.503 28834-28834 InferenceManager        com.lmstudio.mobile                  I  stopGeneration called (sending cancel signal to engine)
-2025-12-28 07:54:09.504 28834-28834 LlamaCppEngine          com.lmstudio.mobile                  I  stopGeneration called
-2025-12-28 07:54:12.374 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: LOOP FINISHED - tokens=85
-2025-12-28 07:54:12.375 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: FINISHED - total tokens=85
-2025-12-28 07:54:12.380 28834-28834 InferenceManager        com.lmstudio.mobile                  I  generateCompletion COMPLETE: finalContentLength=378
-2025-12-28 07:54:12.381 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:54:12.398 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:54:12.399 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
-2025-12-28 07:54:12.400 28834-28834 ChatViewModel           com.lmstudio.mobile                  I  Generation completed, tokens received: 378
-2025-12-28 07:54:12.437 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  Saved assistant message to database: id=57fae6c0-5cfa-471d-a7a5-c47bdd4aeeb2
-2025-12-28 07:54:12.907 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: clearing streaming state (delayed)
-2025-12-28 07:54:13.493   817-2190  CoreBackPreview         system_server                        D  Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@667c24d, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
-2025-12-28 07:54:14.417 28834-28834 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
-2025-12-28 07:54:14.417 28834-28834 ChatViewModel           com.lmstudio.mobile                  I  sendMessage called: length=4, modelLoaded=true
-2025-12-28 07:54:14.417 28834-28834 InferenceManager        com.lmstudio.mobile                  D  isModelLoaded check: true
-2025-12-28 07:54:14.454 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  Starting generation with prompt from 5 messages
-2025-12-28 07:54:14.454 28834-28834 InferenceManager        com.lmstudio.mobile                  I  generateCompletion START: chatId=c585c567-e41f-41ef-854d-22adba7727ea, messageCount=5, state=READY
-2025-12-28 07:54:14.454 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:54:14.454 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:54:14.455 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: GENERATING
-2025-12-28 07:54:14.455 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: state set to GENERATING, chatId=c585c567-e41f-41ef-854d-22adba7727ea, assistantMessageId=cc5a59bc-74d7-43aa-a122-7219b79e9092
-2025-12-28 07:54:14.455 28834-28834 InferenceManager        com.lmstudio.mobile                  D  getModelInfo: name=gemma-3-1b-it.Q2_K.gguf, contextLength=2048
-2025-12-28 07:54:14.455 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: detecting template for model 'gemma-3-1b-it.q2_k.gguf' from messages: [USER:hi, ASSISTANT:Hi there! How are you doing today? 😊 
-                                                                                                    
-                                                                                                    I'm here to help you with anything you need.  Do you have an, USER:bubble sort in python, ASSISTANT:Okay, let's talk about Bubble Sort in Python! Here's a breakdown of how it works and a Python code e, USER:test]
-2025-12-28 07:54:14.455 28834-28834 InferenceManager        com.lmstudio.mobile                  D  buildPrompt: using template GEMMA
-2025-12-28 07:54:14.455 28834-28834 InferenceManager        com.lmstudio.mobile                  D  generateCompletion prompt built (length=753)
-2025-12-28 07:54:14.456 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: START - prompt length=753
-2025-12-28 07:54:14.477 28834-28856 LlamaJNI                com.lmstudio.mobile                  I  Context reset: KV cache cleared, sampler reset, n_past=0
-2025-12-28 07:54:14.478 28834-28856 LlamaCppEngine          com.lmstudio.mobile                  D  generateResponse: context reset
-2025-12-28 07:54:14.504   817-1483  CoreBackPreview         system_server                        D  Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b25b88b, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
-2025-12-28 07:54:16.179 28834-28834 InferenceManager        com.lmstudio.mobile                  I  stopGeneration called (sending cancel signal to engine)
-2025-12-28 07:54:16.179 28834-28834 LlamaCppEngine          com.lmstudio.mobile                  I  stopGeneration called
-2025-12-28 07:54:22.392 28834-28834 InferenceManager        com.lmstudio.mobile                  I  stopGeneration called (sending cancel signal to engine)
-2025-12-28 07:54:22.392 28834-28834 LlamaCppEngine          com.lmstudio.mobile                  I  stopGeneration called
-2025-12-28 07:54:50.349 28834-28834 InferenceManager        com.lmstudio.mobile                  I  stopGeneration called (sending cancel signal to engine)
-2025-12-28 07:54:50.350 28834-28834 LlamaCppEngine          com.lmstudio.mobile                  I  stopGeneration called
-2025-12-28 07:55:02.479 28834-28834 InferenceManager        com.lmstudio.mobile                  I  ejectModel START
-2025-12-28 07:55:02.479 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: IDLE
-2025-12-28 07:55:02.479 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: IDLE
-2025-12-28 07:55:02.479 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: IDLE
-2025-12-28 07:55:04.886 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  ChatViewModel initialized
-2025-12-28 07:55:04.887 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: IDLE
-2025-12-28 07:55:06.173 28834-28834 InferenceManager        com.lmstudio.mobile                  I  loadModel START: path=/storage/emulated/0/Android/data/com.lmstudio.mobile/files/models/gemma-3-1b-it.Q2_K.gguf, nThreads=1, nGpuLayers=0, contextSize=2048
-2025-12-28 07:55:06.173 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: LOADING
-2025-12-28 07:55:06.173 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: LOADING
-2025-12-28 07:55:06.174 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: LOADING
-2025-12-28 07:55:06.174 28834-28834 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: LOADING
-2025-12-28 07:55:58.214   817-991   InputDispatcher         system_server                        W  Window e1bd5b7 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity is unresponsive: e1bd5b7 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity is not responding. Waited 5000ms for MotionEvent
-2025-12-28 07:55:58.214   817-991   InputDispatcher         system_server                        W  Canceling events for e1bd5b7 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity because it is unresponsive
-2025-12-28 07:55:58.228   817-991   WindowManager           system_server                        I  ANR in Window{e1bd5b7 u0 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity}. Reason:Input dispatching timed out (e1bd5b7 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity is not responding. Waited 5000ms for MotionEvent).
-2025-12-28 07:55:59.776   817-29374 ActivityManager         system_server                        E  ANR in com.lmstudio.mobile (com.lmstudio.mobile/.MainActivity)
-                                                                                                    PID: 28834
-                                                                                                    Reason: Input dispatching timed out (e1bd5b7 com.lmstudio.mobile/com.lmstudio.mobile.MainActivity is not responding. Waited 5000ms for MotionEvent).
-                                                                                                    Parent: com.lmstudio.mobile/.MainActivity
-                                                                                                    ErrorId: 31c1614c-00cf-4619-9597-10fb8ef82b1f
-                                                                                                    Frozen: false
-                                                                                                    Load: 1.74 / 1.58 / 1.22
-                                                                                                    ----- Output from /proc/pressure/memory -----
-                                                                                                    some avg10=0.00 avg60=0.36 avg300=0.98 total=190330346
-                                                                                                    full avg10=0.00 avg60=0.33 avg300=0.91 total=157558752
-                                                                                                    ----- End output from /proc/pressure/memory -----
-                                                                                                    ----- Output from /proc/pressure/cpu -----
-                                                                                                    some avg10=1.36 avg60=2.45 avg300=3.25 total=1374372337
-                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=0
-                                                                                                    ----- End output from /proc/pressure/cpu -----
-                                                                                                    ----- Output from /proc/pressure/io -----
-                                                                                                    some avg10=0.00 avg60=0.31 avg300=0.90 total=306776263
-                                                                                                    full avg10=0.00 avg60=0.16 avg300=0.46 total=177237434
-                                                                                                    ----- End output from /proc/pressure/io -----
-                                                                                                    
-                                                                                                    CPU usage from 59278ms to 0ms ago (2025-12-28 02:54:58.958 to 2025-12-28 02:55:58.236):
-                                                                                                      122% 28834/com.lmstudio.mobile: 106% user + 16% kernel / faults: 6113 minor 66 major
-                                                                                                      14% 647/surfaceflinger: 1.1% user + 13% kernel / faults: 3 minor 8 major
-                                                                                                      13% 598/android.hardware.graphics.composer3-service.ranchu: 0% user + 13% kernel
-                                                                                                      2.3% 591/android.hardware.sensors-service.multihal: 0% user + 2.2% kernel
-                                                                                                      1% 817/system_server: 0.3% user + 0.7% kernel / faults: 5687 minor 163 major
-                                                                                                      0.6% 1662/adbd: 0% user + 0.6% kernel / faults: 4790 minor
-                                                                                                      0.4% 29267/kworker/3:0-events: 0% user + 0.4% kernel
-                                                                                                      0.2% 3529/artd: 0.1% user + 0.1% kernel / faults: 16069 minor
-                                                                                                      0.2% 1653/com.google.android.apps.nexuslauncher: 0% user + 0.1% kernel / faults: 3 minor
-                                                                                                      0.1% 1369/com.android.systemui: 0% user + 0.1% kernel / faults: 329 minor 37 major
-                                                                                                    22% TOTAL: 17% user + 5.6% kernel + 0% iowait + 0% softirq
-                                                                                                    CPU usage from 30ms to 357ms later (2025-12-28 02:55:58.266 to 2025-12-28 02:55:58.593):
-                                                                                                      120% 28834/com.lmstudio.mobile: 106% user + 13% kernel / faults: 1328 minor 206 major
-                                                                                                        93% 28856/DefaultDispatch: 93% user + 0% kernel
-                                                                                                        26% 28838/Signal Catcher: 4.4% user + 22% kernel
-                                                                                                      69% 817/system_server: 0% user + 69% kernel / faults: 1625 minor 580 major
-                                                                                                        29% 29375/AnrAuxiliaryTas: 0% user + 29% kernel
-                                                                                                        16% 843/Signal Catcher: 3.3% user + 13% kernel
-                                                                                                        9.9% 29374/AnrConsumer: 0% user + 9.9% kernel
-                                                                                                        3.3% 29373/AnrMainProcessD: 0% user + 3.3% kernel
-                                                                                                      24% 87/kswapd0: 0% user + 24% kernel
-                                                                                                      3.1% 276/logd: 0% user + 3.1% kernel
-                                                                                                      4.4% 28114/kworker/1:3H-kverityd: 0% user + 4.4% kernel
-                                                                                                      4.4% 28748/kworker/0:2-virtio_vsock: 0% user + 4.4% kernel
-                                                                                                      4.5% 29266/kworker/5:9H-kverityd: 0% user + 4.5% kernel
-                                                                                                    40% TOTAL: 18% user + 19% kernel + 2.2% iowait
+2025-12-28 08:55:51.572 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[22]='<'
+2025-12-28 08:55:51.582 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:55:59.520 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[23]='|'
+2025-12-28 08:55:59.544 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:56:07.597 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[24]='thought'
+2025-12-28 08:56:07.630 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'thought'
+2025-12-28 08:56:15.340 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[25]='|'
+2025-12-28 08:56:15.342 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:56:23.227 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[26]='>
+                                                                                                    '
+2025-12-28 08:56:23.234 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>
+                                                                                                    '
+2025-12-28 08:56:31.321 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[27]='<'
+2025-12-28 08:56:31.323 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:56:38.895 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[28]='|'
+2025-12-28 08:56:38.911 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:56:46.469 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[29]='im'
+2025-12-28 08:56:46.472 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:56:54.319 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[30]='_start'
+2025-12-28 08:56:54.320 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_start'
+2025-12-28 08:57:02.005 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[31]='|'
+2025-12-28 08:57:02.011 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:57:09.699 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[32]='>'
+2025-12-28 08:57:09.711 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>'
+2025-12-28 08:57:17.458 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[33]='user'
+2025-12-28 08:57:17.464 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'user'
+2025-12-28 08:57:24.907 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[34]='
+                                                                                                    '
+2025-12-28 08:57:24.917 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
+                                                                                                    '
+2025-12-28 08:57:32.583 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[35]='<'
+2025-12-28 08:57:32.611 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:57:40.689 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[36]='|'
+2025-12-28 08:57:40.711 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:57:48.615 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[37]='im'
+2025-12-28 08:57:48.619 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:57:56.504 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[38]='_end'
+2025-12-28 08:57:56.513 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_end'
+2025-12-28 08:58:03.995 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[39]='|'
+2025-12-28 08:58:04.011 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:58:11.637 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[40]='>
+                                                                                                    '
+2025-12-28 08:58:11.649 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>
+                                                                                                    '
+2025-12-28 08:58:19.432 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[41]='<'
+2025-12-28 08:58:19.445 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:58:26.986 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[42]='|'
+2025-12-28 08:58:26.995 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:58:35.125 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[43]='im'
+2025-12-28 08:58:35.129 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'im'
+2025-12-28 08:58:42.620 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[44]='_start'
+2025-12-28 08:58:42.622 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '_start'
+2025-12-28 08:58:50.126 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[45]='|'
+2025-12-28 08:58:50.132 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:58:58.042 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[46]='>'
+2025-12-28 08:58:58.049 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '>'
+2025-12-28 08:59:06.141 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[47]='assistant'
+2025-12-28 08:59:06.147 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'assistant'
+2025-12-28 08:59:13.895 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[48]='
+                                                                                                    '
+2025-12-28 08:59:13.897 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '
+                                                                                                    '
+2025-12-28 08:59:21.749 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[49]='<'
+2025-12-28 08:59:21.752 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '<'
+2025-12-28 08:59:29.793 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[50]='|'
+2025-12-28 08:59:29.811 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:59:37.889 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[51]='thought'
+2025-12-28 08:59:37.911 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: 'thought'
+2025-12-28 08:59:45.774 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  V  generateResponse: token[52]='|'
+2025-12-28 08:59:45.780 31539-31539 InferenceManager        com.lmstudio.mobile                  V  generateCompletion token: '|'
+2025-12-28 08:59:52.901 31539-31539 InferenceManager        com.lmstudio.mobile                  I  stopGeneration called (sending cancel signal to engine)
+2025-12-28 08:59:52.901 31539-31539 LlamaCppEngine          com.lmstudio.mobile                  I  stopGeneration called
+2025-12-28 08:59:52.926 31539-31539 LlamaJNI                com.lmstudio.mobile                  I  Native stop flag set
+2025-12-28 08:59:53.886 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: LOOP FINISHED - tokens=53
+2025-12-28 08:59:53.886 31539-31565 LlamaCppEngine          com.lmstudio.mobile                  I  generateResponse: FINISHED - total tokens=53
+2025-12-28 08:59:53.888 31539-31539 InferenceManager        com.lmstudio.mobile                  I  generateCompletion COMPLETE: finalContentLength=122
+2025-12-28 08:59:53.888 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  InferenceState changed to: READY
+2025-12-28 08:59:53.894 31539-31539 ChatViewModel           com.lmstudio.mobile                  I  Generation completed, tokens received: 122
+2025-12-28 08:59:53.909 31539-31539 ChatViewModel           com.lmstudio.mobile                  D  Saved assistant message to database: id=ae8ea348-0cd4-4894-a39b-83a8d98acfce
+2025-12-28 08:59:54.403 31539-31539 InferenceManager        com.lmstudio.mobile                  D  generateCompletion: clearing streaming state (delayed)

@@ -139,7 +139,7 @@ fun SettingsScreen(
             SettingsSection(title = "About") {
                 SettingsInfoItem(
                     title = "Version",
-                    value = "1.0.7"
+                    value = "1.0.8"
                 )
                 SettingsInfoItem(
                     title = "Build",
