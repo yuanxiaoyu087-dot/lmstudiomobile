@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <cstring>
+#include <atomic>
 
 #define LOG_TAG "LlamaJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -19,6 +20,7 @@ struct LlamaContext {
     std::vector<llama_token> tokens_list;
     int n_past = 0;
     std::mutex mutex;
+    std::atomic<bool> should_stop{false};
     
     LlamaContext() : model(nullptr), ctx(nullptr), sampler(nullptr), vocab(nullptr) {}
     
@@ -88,6 +90,11 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
     if (!llama_ctx) return env->NewStringUTF("");
     std::lock_guard<std::mutex> lock(llama_ctx->mutex);
 
+    if (llama_ctx->should_stop) {
+        LOGI("Generation stopped before starting");
+        return env->NewStringUTF("");
+    }
+
     const char* prompt_str = env->GetStringUTFChars(prompt, nullptr);
     if (!prompt_str) {
         return env->NewStringUTF("");
@@ -112,34 +119,44 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeGenerateToken(
         llama_ctx->tokens_list.resize(n_tokens);
         llama_tokenize(llama_ctx->vocab, prompt_str, strlen(prompt_str), llama_ctx->tokens_list.data(), n_tokens, true, true);
         
-        // Decode the prompt tokens
-        llama_batch batch = llama_batch_init(n_tokens, 0, 1);
-        batch.n_tokens = n_tokens;
-        for (int i = 0; i < n_tokens; ++i) {
-            batch.token[i] = llama_ctx->tokens_list[i];
-            batch.pos[i] = i;
-            batch.n_seq_id[i] = 1;
-            batch.seq_id[i][0] = 0;
-            batch.logits[i] = (i == n_tokens - 1);
-        }
-
-        int decode_result = llama_decode(llama_ctx->ctx, batch);
-        if (decode_result != 0) {
-            LOGE("Decode failed with code: %d", decode_result);
-            llama_batch_free(batch);
-            // Clear memory (KV cache) on failure to enable recovery for next request
-            llama_memory_clear(llama_get_memory(llama_ctx->ctx), true);
-            if (llama_ctx->sampler) {
-                llama_sampler_reset(llama_ctx->sampler);
+        // Decode the prompt tokens in batches to remain interruptible
+        int batch_size = 32;
+        for (int i = 0; i < n_tokens; i += batch_size) {
+            if (llama_ctx->should_stop) {
+                LOGI("Prompt decoding interrupted at token %d", i);
+                env->ReleaseStringUTFChars(prompt, prompt_str);
+                return env->NewStringUTF("");
             }
-            llama_ctx->tokens_list.clear();
-            llama_ctx->n_past = 0;
-            env->ReleaseStringUTFChars(prompt, prompt_str);
-            return env->NewStringUTF("");
+
+            int n_batch = std::min(batch_size, n_tokens - i);
+            llama_batch batch = llama_batch_init(n_batch, 0, 1);
+            batch.n_tokens = n_batch;
+
+            for (int j = 0; j < n_batch; ++j) {
+                int token_idx = i + j;
+                batch.token[j] = llama_ctx->tokens_list[token_idx];
+                batch.pos[j] = token_idx;
+                batch.n_seq_id[j] = 1;
+                batch.seq_id[j][0] = 0;
+                batch.logits[j] = (token_idx == n_tokens - 1);
+            }
+
+            int decode_result = llama_decode(llama_ctx->ctx, batch);
+            llama_batch_free(batch);
+
+            if (decode_result != 0) {
+                LOGE("Decode failed at prompt token %d with code: %d", i, decode_result);
+                llama_memory_clear(llama_get_memory(llama_ctx->ctx), true);
+                if (llama_ctx->sampler) {
+                    llama_sampler_reset(llama_ctx->sampler);
+                }
+                llama_ctx->tokens_list.clear();
+                llama_ctx->n_past = 0;
+                env->ReleaseStringUTFChars(prompt, prompt_str);
+                return env->NewStringUTF("");
+            }
+            llama_ctx->n_past += n_batch;
         }
-        
-        llama_ctx->n_past = n_tokens;
-        llama_batch_free(batch);
     }
     
     env->ReleaseStringUTFChars(prompt, prompt_str);
@@ -196,6 +213,24 @@ Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeUnloadModel(JNIEnv*, jo
         LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
         delete llama_ctx;
         LOGI("Native model deleted");
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeStopGeneration(JNIEnv*, jobject, jlong contextPtr) {
+    LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
+    if (llama_ctx) {
+        llama_ctx->should_stop = true;
+        LOGI("Native stop flag set");
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_lmstudio_mobile_llm_engine_LlamaCppEngine_nativeResetStopFlag(JNIEnv*, jobject, jlong contextPtr) {
+    LlamaContext* llama_ctx = reinterpret_cast<LlamaContext*>(contextPtr);
+    if (llama_ctx) {
+        llama_ctx->should_stop = false;
+        LOGI("Native stop flag reset");
     }
 }
 

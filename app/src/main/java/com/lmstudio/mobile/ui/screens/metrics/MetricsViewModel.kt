@@ -7,12 +7,10 @@ import com.lmstudio.mobile.llm.monitoring.ResourceMetrics
 import com.lmstudio.mobile.util.DeviceUtils
 import com.lmstudio.mobile.util.ResourceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class MetricsState(
@@ -51,8 +49,8 @@ class MetricsViewModel @Inject constructor(
 
     fun startMonitoring() {
         monitoringJob?.cancel()
-        monitoringJob = viewModelScope.launch {
-            while (true) {
+        monitoringJob = viewModelScope.launch(Dispatchers.Default) {
+            while (isActive) {
                 val engineMetrics = llmEngine.getResourceUsage()
                 val systemMetrics = resourceMonitor.getCurrentMetrics()
                 

@@ -47,6 +47,10 @@ class InferenceManager @Inject constructor(
     }
 
     suspend fun loadModel(modelPath: String, config: InferenceConfig): Result<Unit> {
+        if (_state.value == InferenceState.LOADING) {
+            Log.w(TAG, "loadModel: Already loading a model, ignoring request")
+            return Result.failure(Exception("Model load already in progress"))
+        }
         Log.i(TAG, "loadModel START: path=$modelPath, nThreads=${config.nThreads}, nGpuLayers=${config.nGpuLayers}, contextSize=${config.contextSize}")
         _state.value = InferenceState.LOADING
         return llmEngine.loadModel(modelPath, config).also { result ->

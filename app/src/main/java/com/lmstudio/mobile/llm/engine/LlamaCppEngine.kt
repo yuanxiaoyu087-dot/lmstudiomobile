@@ -52,6 +52,8 @@ class LlamaCppEngine @Inject constructor(
 
     private external fun nativeUnloadModel(contextPtr: Long)
     private external fun nativeResetContext(contextPtr: Long)
+    private external fun nativeStopGeneration(contextPtr: Long)
+    private external fun nativeResetStopFlag(contextPtr: Long)
 
     private external fun nativeGetMemoryUsage(contextPtr: Long): FloatArray
 
@@ -109,6 +111,11 @@ class LlamaCppEngine @Inject constructor(
             synchronized(this@LlamaCppEngine) {
                 currentGenerationJob?.cancel()
                 currentGenerationJob = currentJob
+
+                val ptr = contextPtr
+                if (ptr != 0L) {
+                    nativeResetStopFlag(ptr)
+                }
             }
             
             var tokenCount = 0
@@ -181,6 +188,10 @@ class LlamaCppEngine @Inject constructor(
     override fun stopGeneration() {
         Log.i(TAG, "stopGeneration called")
         synchronized(this) {
+            val ptr = contextPtr 
+            if (ptr != 0L) {
+                nativeStopGeneration(ptr)
+            }
             currentGenerationJob?.cancel()
             currentGenerationJob = null
         }
